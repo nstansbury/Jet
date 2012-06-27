@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE window PUBLIC "-//MOZILLA//DTD XUL V1.0//EN" "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<?xul-overlay href="overlays/libraries.xul"?>
+
+<window id="startup-window" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" 
+	width="480" height="149"
+	title="Jet Startup"
+	windowtype="jet:startup"
+	onload="loadStartup();" >
+	
+	<script type="text/javascript;e4x=1" src="resource://xulu/loader.js"/>
+	<script type="text/javascript;e4x=1" src="chrome://jet/content/startup.js"/>
+	<script type="text/javascript" src="chrome://xpcomviewer/content/global.js"/>
+	<script type="text/javascript" src="chrome://xpcomviewer/content/overlays/overlays.js"></script>
+	<toolbox>
+		<toolbar>
+			<toolbarbutton oncommand="xpcomviewer.overlay.open();" class="menuitem-iconic icon16" label="XPC Viewer"/>
+		</toolbar>
+	</toolbox>
+	
+</window>

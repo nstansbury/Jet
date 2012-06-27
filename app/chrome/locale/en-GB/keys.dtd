@@ -1,0 +1,19 @@
+<!ENTITY CmdMessageMail.key					"m">
+<!ENTITY CmdMessageAppt.key					"a">
+<!ENTITY CmdMessageTask.key					"t">
+<!ENTITY CmdMessageNote.key					"r">
+<!ENTITY CmdMessagePhone.key				"p">
+<!ENTITY CmdMessageDocument.key			"d">
+<!ENTITY CmdMessageDocumentRef.key		"d">
+
+<!ENTITY CmdSave.key								"s">
+<!ENTITY CmdCut.key								"x">
+<!ENTITY CmdCopy.key								"c">
+<!ENTITY CmdPaste.key							"v">
+<!ENTITY CmdUndo.key							"z">
+<!ENTITY CmdRedo.key							"y">
+<!ENTITY CmdSelectAll.key						"a">
+<!ENTITY CmdSelectInverse.key					"i">
+<!ENTITY CmdPrint.key								"p">
+<!ENTITY CmdQuickView.key						"q">
+<!ENTITY CmdFind.key								"f">

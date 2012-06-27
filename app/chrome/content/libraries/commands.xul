@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<overlay id="commandsOverlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+	<script type="text/javascript;e4x=1" src="chrome://jet/content/libraries/commands.js"/>
+
+	<commandset>
+		<command id="cmdReloadChrome" label="Reload" tooltiptext="Reload Chrome" 
+				oncommand='Components.classes["@mozilla.org/chrome/chrome-registry;1"].getService(Components.interfaces.nsIXULChromeRegistry).reloadChrome();'/>
+		
+	</commandset>
+
+</overlay>

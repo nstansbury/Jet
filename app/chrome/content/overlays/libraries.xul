@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<?xul-overlay href="../libraries/commands.xul"?>
+<?xul-overlay href="../libraries/buttons.xul"?>
+<?xul-overlay href="../libraries/toolbars.xul"?>
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://jet/skin/global.css" type="text/css"?>
+
+<overlay id="librariesOverlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+	
+</overlay>
