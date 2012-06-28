@@ -1,0 +1,6 @@
+
+
+
+[submodule "app/extensions/xulu@neilstansbury.com"]
+	path = app/extensions/xulu@neilstansbury.com
+	url = https://github.com/nstansbury/Xulu.git
