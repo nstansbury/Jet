@@ -1,12 +1,11 @@
-let EXPORTED_SYMBOLS = ["Jet"];
+let EXPORTED_SYMBOLS = ["App"];
 
 Components.utils.import("resource://jet/base.jsm");
 
-ImportNS("Jet.Services", this);
+var Services = ImportNS("Jet.Services");
 
-
-Jet = {
-	__proto__ : ServiceProvider,	// Just so you know really...
+App = {
+	__proto__ : Services.ServiceProvider,	// Just so you know really...
 	
 	// Startup options object.  Eg. -start jester args
 	Options : {
@@ -15,33 +14,14 @@ Jet = {
 	
 	get name(){ return "Jet.App"; },
 	
-	/** @param {Array} params */
+	/** @param {Array} [params] */
 	/** @returns {Void} */
 	start : function start(params)	{
-		jetOptions(params);
+		if(params){
+			jetOptions(params);
+		}
 		jetRegister();
 		
-		/*
-		ImportNS("Jet.Net");
-		
-		var httpService = new Jet.Net.HttpService();
-		function handler(request)	{
-			if(request.method == GET)	{
-				
-				// Do stuff
-			}
-			else {
-				request.response.setResponseHeader("xxx", "yyy");
-				request.response.send();
-			}
-		}
-		httpService.addResourceHandler(".xml", handler);
-		httpService.addRequestHandler(handler);
-		
-		httpService.addEventListener("endrequest", listener);
-		
-		httpService.listen(8000);
-	*/
 		Trace("# Jet is running.... <Ctrl+C> to Exit");
 		var nsThreadManager = Mozilla.Components.Service("@mozilla.org/thread-manager;1", "nsIThreadManager");
 		var mainThread = nsThreadManager.currentThread;
@@ -75,19 +55,19 @@ function jetOptions(args)	{
 		var arg = args[i];
 		if(arg.indexOf("-") == 0)	{		// Option eg. -start
 			name = arg.substring(1);
-			Jet.Options[ name ] = [];
+			App.Options[ name ] = [];
 		}
 		else {
-			Jet.Options[ name ].push(arg);
+			App.Options[ name ].push(arg);
 		}
 	}	
 }
 
 function jetRegister()	{
 	var registerAll =  true;
-	if(Jet.Options.start != undefined)	{
+	if(App.Options.start != undefined)	{
 		registerAll = false;
-		var extList = Jet.Options["start"].join().toLowerCase();
+		var extList = App.Options["start"].join().toLowerCase();
 	}
 	var extns = [];
 	

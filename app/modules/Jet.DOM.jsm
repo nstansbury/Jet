@@ -3,7 +3,7 @@ let EXPORTED_SYMBOLS = ["window", "document", "console", "setInterval", "setTime
 Components.utils.import("resource://jet/base.jsm");
 
 ImportNS("Jet", this);
-ImportNS("Jet.Events");
+ImportNS("Jet.Events", this);
 
 
 var nsAppShellService = Mozilla.Components.Service( "@mozilla.org/appshell/appShellService;1", "nsIAppShellService" );

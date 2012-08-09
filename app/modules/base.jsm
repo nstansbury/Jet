@@ -1,53 +1,73 @@
-let EXPORTED_SYMBOLS = ["RegisterNS", "RegisterAlias", "ImportNS", "LoadScript", "ReadFile", "WriteFile", "GetFile", "Trace", "Mozilla"];
+let EXPORTED_SYMBOLS = ["Jet", "RegisterNS", "RegisterAlias", "ImportNS", "UnloadNS", "LoadScript", "ReadFile", "WriteFile", "GetFile", "Trace", "TryCatch", "Mozilla"];
 
 /**	RegisterNS() expect to be able to register a resource://alias/module path and import loader.jsm to initialise the Namespace
 		ImportNS() will then be able to import modules registered in those namespaces
 */
 
 
+
+Jet = {
+	__scope : null,
+	
+	/** @param {Object} scope */
+	/** @returns {Void} */
+	Start : function(scope)	{
+		Jet.__scope = scope;
+		RegisterAlias("Lib", GetFile("app/libraries"));
+		RegisterAlias("Res", GetFile("app/res"));
+		RegisterAlias("Tests", GetFile("tests"));
+		
+		Trace.enabled = true;
+		
+		ImportNS("Jet");
+		Jet.App.start();
+	}
+};
+
+
 /** @param {String} namespace */
-/** @param {Object} scope */
+/** @param {Object} [scope] */
+/** @param {Boolean} [relative] Import exported object relative to the scope in use */
 /** @returns {Object} */
-function ImportNS(namespace, scope)		{
-	if(!ImportNS.__Global)	{
-		ImportNS.__Global = scope;		// The first Import() call sets the Global scope
-		var ns = scope;
-	}
-	else if(!scope)	{
-		var ns = ImportNS.__Global;
-	}
-	else {
-		var ns = scope;
-	}
-	
-	var keys = namespace.split(".");	//** Expecting format:  x.y.z
-	var len = keys.length;
-	//** Ensure the full namespace object hierachy exists
-	for(var i = 0; i < len; i++)	{
-		var key = keys[ i ];
-		//** Because testing for undefined in strict mode generates a "referenced to undefined property" warning
-		if(ns.hasOwnProperty(key) == false)	{
-			ns[ key ] = {};
-			var imported = false;
-		}
-		ns = ns[ key ];
-	}
-	
-	var resource = "resource://" + keys[ 0 ] +"/" +namespace +".jsm";
-	
+function ImportNS(namespace, scope, relative)		{
 	try {
-		Trace("# Import Namespace :: "+namespace);
-		if(!scope)	{
-			scope = ns;
+		Trace("# Importing Namespace :: "+namespace);
+		var path = namespace.split(".");									//** Expecting format:  x.y.z
+		
+		if(relative != true)	{													//** Ensure the full namespace object hierachy exists
+			scope = (scope == undefined) ? Jet.__scope : scope;
+			var len = path.length;
+			for(var i = 0; i < len; i++)	{
+				var name = path[ i ];
+				if(scope.hasOwnProperty(name) == false)	{		//** Because testing for undefined in strict mode generates a "referenced to undefined property" warning
+					scope[ name ] = {};
+				}
+				scope = scope[ name ];
+			}
 		}
+		//	else We import the namespace exports directly into the scope argument
+		var resource = "resource://" + path[ 0 ] +"/" +namespace +".jsm";
 		Components.utils.import(resource, scope);
 	}
 	catch(e)	{
 		throw new Components.Exception("Module Import Failed :: " +resource, null, Components.stack.caller, null, e);
 	}
-	return scope[ keys[ 0 ] ];
+	return scope;
 }
 
+/** @param {String} namespace */
+/** @param {Object} [scope] */
+function UnloadNS(namespace, scope)		{
+	Trace("# Unloading Namespace :: "+namespace);
+	var path = namespace.split(".");									//** Expecting format:  x.y.z
+	
+	scope = (scope == undefined) ? Jet.__scope : scope;
+	if(scope.Dispose){
+		scope.Dispose();
+	}
+	var resource = "resource://" + path[ 0 ] +"/" +namespace +".jsm";
+	Components.utils.unload(resource);	
+}
 
 	
 /** @param {String} namespace */
@@ -57,31 +77,38 @@ function RegisterNS(namespace, path)	{
 	try {
 		var ioService = Mozilla.Components.Service("@mozilla.org/network/io-service;1", "nsIIOService");
 		var resourceHandler = ioService.getProtocolHandler("resource").QueryInterface(Components.interfaces.nsIResProtocolHandler);
-			
+		
 		if(path)		{
-			path.append("modules");
-			var fileUri = ioService.newFileURI(path);
+			var appBaseDir = path;
 		}
 		else {
 			var dirService = Mozilla.Components.Service("@mozilla.org/file/directory_service;1", "nsIProperties");
 			var procDir = dirService.get("CurProcD", Components.interfaces.nsIFile);	
 			
 			var appBaseDir = procDir.parent;
-			appBaseDir.append("app");
-		
-			var modulesDir = appBaseDir.clone();
-			modulesDir.append("modules");
-			var fileUri = ioService.newFileURI(modulesDir);		
+			appBaseDir.append("app");	
 		}
+		
+		var modulesDir = appBaseDir.clone();
+		modulesDir.append("modules");
+		var fileUri = ioService.newFileURI(modulesDir);
 		resourceHandler.setSubstitution(namespace.toLowerCase(), fileUri);
 		
 		var nsChromeReg = Mozilla.Components.Service("@mozilla.org/chrome/chrome-registry;1", "nsIChromeRegistry");
 		nsChromeReg.checkForNewChrome();
-		// Now import the loader module for this namespace
-		Components.utils.import("resource://" +namespace +"/loader.jsm");
+		/*
+		var compDir = appBaseDir.clone();
+		compDir.append("components");
+		Components.manager.QueryInterface(Components.interfaces.nsIComponentRegistrar);
+		Components.manager.autoRegister(compDir);
+		*/
+		
+		// Now import the loader module for this namespace into the default scope
+		Components.utils.import("resource://" +namespace +"/loader.jsm", Jet.__scope);
 		Trace("# Namespace Registered :: "+namespace);
 	}
 	catch(e)	{
+		Trace(e.message);
 		Trace("! Namespace Registration Failed :: "+namespace);
 	}
 }
@@ -114,7 +141,7 @@ function Trace(thing, all)	{
 	if(Trace.enabled == false)	{
 		return;
 	}
-	if(thing instanceof Components.Exception || thing instanceof TypeError)	{
+	if(thing instanceof Components.Exception || thing.constructor.name == "TypeError" || thing.constructor.name == "ReferenceError")	{ // instanceof TypeError returns false ;-(
 		dump("Exception :: File: " +(thing.filename || thing.fileName) +", Line: " +thing.lineNumber +", Message: " +thing.message +"\n");
 	}
 	else if(typeof thing == "object")	{
@@ -161,7 +188,7 @@ function LoadScript(path, scope)	{
 
 /** @param {String} path */
 /** @param {Function} callback */
-/** @returns {String} */
+/** @returns {Void} */
 function ReadFile(path, callback)	{
 	Components.utils.import("resource://gre/modules/NetUtil.jsm");
 	
@@ -210,6 +237,34 @@ function GetFile(path)	{
 	return file;
 }
 
+
+/** @param {Object} [thisArg] */
+/** @param {Function|String} func Method to try */
+/** @param {Array} [argsArray] */
+/** @param {Function} [onerror] */
+/** @returns {Boolean} */
+function TryCatch(thisArg, func, argsArray, onerror)	{
+	try {
+		if(typeof(thisArg) == "function"){	// No this arg
+			argsArray = func;
+			func = thisArg;
+			func.apply(null, argsArray);
+		}
+		else if(typeof(func) == "string"){
+			thisArg[ func ].apply(thisArg, argsArray);
+		}
+	}
+	catch(e) {
+		if(onerror){
+			onerror(e);
+		}
+		else {
+			Trace(e);
+		}
+		return false
+	}
+	return true;
+}
 
 Mozilla = {
 	Components : {

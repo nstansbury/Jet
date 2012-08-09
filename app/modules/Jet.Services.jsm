@@ -2,6 +2,7 @@ var EXPORTED_SYMBOLS = ["ServiceProvider"];
 
 Components.utils.import("resource://jet/base.jsm");
 
+
 ServiceProvider = {
 	get name(){throw new Components.Exception("Not Implemented");},
 	
