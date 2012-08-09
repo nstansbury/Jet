@@ -1,0 +1,12 @@
+Jet is a JavaScript Server running on Mozilla SpiderMonkey with XPCOM/XPConnect functionality.
+
+Based on the XULRunner stack, it supports extensions as per ordinary XULRunner/Firefox apps.
+
+Download and copy the XULRunner binaries into Jet/bin directory.
+See: ftp://ftp.mozilla.org/pub/mozilla.org/xulrunner/releases/
+
+To run execute Jet.bat
+
+
+I'll get round to writing some more useful docs ASAP, however look at the Jester and Xulu extensions to get an idea of
+how to build them.
