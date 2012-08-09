@@ -1,0 +1,64 @@
+body {
+	margin: 20px;
+	background-color: #ebebeb;
+	color: #333333;
+	font-size: 14px;
+	font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+}
+h1, h2, h3 {
+	display: inline-block;
+	margin: 0px;
+	padding: 5px;
+	font-size: 20px;
+	font-weight: normal;
+}
+h3 {
+	font-size: 14px;
+	width: 300px;
+}
+ul, ol {
+	list-style: none;
+	padding: 0px;
+}
+ul {
+	border: 2px solid #999999;
+	border-radius: 5px;
+	background-color: #cccccc;
+	-moz-user-select: -moz-none;
+	-khtml-user-select: none;
+	-webkit-user-select: none;
+	user-select: none;
+	cursor: pointer;
+}
+.collapsed ol	{
+	display: none;
+}
+	
+li {
+	list-style: none;
+	border-top: 1px solid #e1e1e1;
+	padding-left: 25px;
+	color: green;
+	background-image: url("pass.png");
+	background-repeat: no-repeat;
+	background-position: 3px;
+}
+li.failed {
+	background-image: url("fail.png");
+	color: red;
+}
+ul > li:first-child {
+	background-image: url("dn.png");
+	background-position: 4px 4px;
+	border: none;
+}
+.collapsed > li:first-child {
+	background-image: url("up.png");
+	background-position: 4px 5px;
+}
+#testResults {
+	border-radius: 5px;
+	border: 2px solid #999999;
+	background-color: #cccccc;
+	padding: 10px;
+}

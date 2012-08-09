@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" 
+	xmlns:cal="http://www.w3.org/2002/12/cal/ical#" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns:ma="http://www.w3.org/ns/ma-ont#" xml:lang="en">
+	<head>
+		<title>Jester - JavaScript Test Runner</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+		<script type="text/javascript" src="index.js"></script>
+		<link rel="stylesheet" type="text/css" href="index.css" />
+	</head>
+	<body>
+		
+		<div id="testResults">
+			<h1>Jester Test Runner</h1>
+			<p>Test File: 
+				<input type="text" id="testfile" value=""/><input type="button" onclick="Jester.run()" value="Run"/>
+			</p>
+		</div>
+		
+		<ul class="collapsed">
+			<li>
+				<h2>Test Suite 1</h2>
+				<ol>
+					<li>
+						<h3>Test Case 1</h3>
+					</li>
+					<li>
+						<h3>Test Case 2</h3>
+					</li>
+					<li>
+						<h3>Test Case 3</h3>
+					</li>
+				</ol>
+			</li>
+		</ul>
+		
+		<ul>
+			<li class="failed">
+				<h2>Test Suite 2</h2>
+				<ol>
+					<li class="failed">
+						<h3>Test Case 1</h3>Expected 'Hello world' to contain 'worlds'.
+					</li>
+					<li>
+						<h3>Test Case 2</h3>
+					</li>
+					<li>
+						<h3>Test Case 3</h3>
+					</li>
+				</ol>
+			</li>
+		</ul>
+				
+	</body>
+</html>
+

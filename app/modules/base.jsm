@@ -179,11 +179,13 @@ function Trace(thing, all)	{
 /** @returns {Void} */
 function LoadScript(path, scope)	{
 	if(!scope)	{
-		throw new Components.Exception("No scope argument supplied to LoadScript() :: " +script, null, Components.stack.caller);
+		throw new Components.Exception("No scope argument supplied to LoadScript() :: " +path, null, Components.stack.caller);
 	}
 	var loader = Mozilla.Components.Service("@mozilla.org/moz/jssubscript-loader;1", "mozIJSSubScriptLoader");  
 	loader.loadSubScript(path, scope);
 }
+
+
 
 
 /** @param {String} path */

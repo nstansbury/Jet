@@ -1,65 +1,74 @@
-let EXPORTED_SYMBOLS = ["Jester"];
+let EXPORTED_SYMBOLS = ["App"];
 
 Components.utils.import("resource://jet/base.jsm");
 
-
-ImportNS("Jet", this);
-ImportNS("Jet.Data");
+ImportNS("Jet");
 ImportNS("Jet.Services");
+ImportNS("Jet.Net");
+ImportNS("Jet.Data");
 
-ImportNS("Jet.DOM");
-ImportNS("Jet.DOM", this);
 
 
-var scope = this;
-
-var Jester = {
+App = {
 	__proto__ : Jet.Services.ServiceProvider,
+	__httpService : null,
+	
+	test : null,
 	
 	/** @returns {Void} */
 	start : function()	{
-		LoadScript("resource://lib/jasmine.js", scope);
-		LoadScript("resource://lib/jasmine-html.js", scope);
-		LoadScript("resource://lib/jam.js", scope);
-		jasmine.getEnv().addReporter(new Jester.jUnitReporter());
+		var file = GetFile("app/extensions/jester@jet/modules/html");
+		this.__httpService = new Jet.Net.HttpService();
+		this.__httpService.registerDirectory("/jester/", file);
+		this.__httpService.registerPathHandler( "/jester", App.beginRequest );
+		Jet.Net.Server.listen(8080, this.__httpService);
+	},
+	
+	/** @returns {Void} */
+	stop : function(){
+		this.__started = false;
+		this.__httpService.stop();
+	},
+	
+	beginRequest : function(metadata, httpResponse)	{
+		try{
+			Trace("# Jester :: beginRequest");
+			httpResponse.processAsync();
+			
+			App.test = {};
+			ImportNS("Jester.Runner", App.test, true);
+			
+			function oncomplete(results){
+				App.endRequest(metadata, httpResponse, results);
+			}
+			
+			if(metadata.queryString){
+				var keyval = metadata.queryString.split("&");
+				var params = keyval[ 0 ].split("=");
+				if(params[ 0 ] == "run")	{
+					var testfile = params[ 1 ];
+				}
+			}
+			
+			//var testfile = "resource://tests/jet/all.js";
+			var reporter = new jUnitReporter(oncomplete);
+			App.test.Runner.load(testfile, reporter);
+		}
+		catch(e)	{
+			Trace(e);
+		}
+	},
+	
+	endRequest : function(metadata, httpResponse, results)	{
+		Trace("# Jester :: endRequest");
+		//WriteFile(results, "D:\\Dev\\out.xml");
+		httpResponse.setHeader("Content-Type", "text/xml");
+		httpResponse.write(results);
+		httpResponse.finish();
 		
-		function onRunReady()	{
-			document = window.document;		// We always need to re-export the new document
-			Jester.onRunReady();
-		}
-		window.addEventListener("DOMContentLoaded", onRunReady, false);
-	},
+		UnloadNS("Jester.Runner", App.test);
+	}
 	
-	/** @returns {Void} */
-	run : function()	{
-		try {
-			jasmine.getEnv().execute();
-		}
-		catch(e)	{
-			var results = new Jet.Data.DataTemplate("JUnitTestResults");
-			results.testsuites.push(Jet.DOM.encodeEntities(e.toString()));
-			Trace("Jester run error :: "+e.toString());
-			this.onRunComplete(results.toString());
-		}
-	},
-	
-	/** @param {Array} params */
-	/** @returns {Void} */
-	load : function(testfile)	{
-		try {
-			LoadScript(testfile, scope);	// The testfile has scope access to all the Jet & Jester API calls
-		}
-		catch(e)	{
-			var results = new Jet.Data.DataTemplate("JUnitTestResults");
-			results.testsuites.push(Jet.DOM.encodeEntities(e.toString()));
-			Trace("Jester load error :: "+testfile +"  " +e.toString());
-			this.onRunComplete(results.toString());
-		}
-	},
-	
-	onRunComplete : function(results){},
-	
-	onRunReady : function(){}
 }
 
 
@@ -101,11 +110,12 @@ for(var key in TestResults)		{
 
 
 
-Jester.jUnitReporter = function jUnitReporter()	{
+jUnitReporter = function jUnitReporter(onruncomplete)	{
 	this.__testResults = new Jet.Data.DataTemplate("JUnitTestResults");
+	this.onruncomplete = onruncomplete;
 }
 
-Jester.jUnitReporter.prototype = {
+jUnitReporter.prototype = {
 	
 	/** @param {Jasmine.Suite} suite */
 	/** @returns {String} */
@@ -191,10 +201,10 @@ Jester.jUnitReporter.prototype = {
 		var results = runner.results();
 		Trace("Ending Jasmine Reporter.. "+results.totalCount +" Spec/s, " +results.failedCount +" Failed");
 		try {
-			Jester.onRunComplete(this.__testResults.toString());
+			this.onruncomplete(this.__testResults.toString());
 		}
 		catch(e)	{
-			// We just bin any onRunComplete exceptions
+			// We just bin any onruncomplete exceptions
 		}
 	}
 }
