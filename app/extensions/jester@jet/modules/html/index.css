@@ -47,6 +47,10 @@ li.failed {
 	background-image: url("fail.png");
 	color: red;
 }
+li.error {
+	background-image: url("error.png");
+	color: black;
+}
 ul > li:first-child {
 	background-image: url("dn.png");
 	background-position: 4px 4px;

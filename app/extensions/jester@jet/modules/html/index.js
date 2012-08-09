@@ -2,38 +2,52 @@
 /** @namespace */
 var Jester = {
 
-	testSuite : "<ul>\
+	testSuite : '<ul class="{status}">\
 						<li>\
 							<h2>{title}</h2>\
 							<ol>{testcases}</ol>\
 						</li>\
-					</ul>",
+					</ul>',
 
-	testCase : "<li>\
-						<h3>{title}</h3>{failure}\
-					</li>",
+	testCase : '<li class="{status}">\
+						<h3>{title}</h3>{failure}{error}\
+					</li>',
 
 	run : function()	{
-		jQuery.get("http://localhost:8080/jester?run=resource://tests/jet/all.js", Jester.write(data));	
+		jQuery.get("http://localhost:8080/jester?run=resource://tests/jet/all.js", function(data){Jester.write(data)});	
 	},
 	
 	write : function(data)	{
-		console.log(data);
-		
-		jQuery(data).each("testsuite", function(index, elem){
+		var testsuites = [];
+		jQuery(data).find("testsuite").each(function(index, testsuite){
+			var hasFailed = false;
 			var testcases = [];
-			jQuery(elem).each("testcase", function(index, elem){
+			jQuery(testsuite).find("testcase").each(function(index, testcase){
 				var tc = Jester.testCase;
-				ts.replace("{title}", jQuery(elem).att("name"));
-				var message = jQuery(elem).children("failure").attr("message");
-				ts.replace("{failure}", message);
+				tc = tc.replace("{title}", jQuery(testcase).attr("name"));
+				var status = "passed";
+				var failure = jQuery(testcase).children("failure").attr("message") || "";
+				var error = jQuery(testcase).children("error").attr("message") || "";
+				if(failure){
+					hasFailed = true;
+					status = "failed";
+				}
+				else if(error){
+					hasFailed = true;
+					status = "error";
+				}
+				tc = tc.replace("{status}", status);
+				tc = tc.replace("{failure}", failure);
+				tc = tc.replace("{error}", error);
+				testcases.push(tc);
 			});
 			var ts = Jester.testSuite;
-			ts.replace("{title}", jQuery(elem).att("name"));
-			ts.replace("{testcases}", testcases.join(""));
-			var suite = jQuery(ts);
+			ts = ts.replace("{status}", hasFailed == true ? "failed" : "passed");
+			ts = ts.replace("{title}", jQuery(testsuite).attr("name"));
+			ts = ts.replace("{testcases}", testcases.join(""));
+			testsuites.push(ts);
 		});
-		
+		jQuery("#testResults").parent().append(testsuites.join(""));
 	},
 	
 	toggleSection : function(e)	{
