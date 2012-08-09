@@ -2,21 +2,29 @@ let EXPORTED_SYMBOLS = ["Server", "HttpService"];
 
 Components.utils.import("resource://jet/base.jsm");
 
+//** @See https://developer.mozilla.org/en-US/docs/HTTP_server_for_unit_tests */
+Components.utils.import("resource://lib/httpd.js");
+HttpService = HttpServer;
+
 var threadManager = Mozilla.Components.Service("@mozilla.org/thread-manager;1", "nsIThreadManager");
 
+
 Server = {
-	__handlers : {},
+	__services : {},
 	
 	/** @param {Number} port */
-	/** @param {ConnectionHandler} handler */
+	/** @param {ConnectionHandler} service */
 	/** @returns {Void} */
-	listen : function(port, handler)	{
+	listen : function(port, service)	{
 		try {
-			if(this.__handlers[ port ] == null)	{
+			if(this.__services[ port ] == null)	{
+				/*
 				socket = Mozilla.Components.Instance("@mozilla.org/network/server-socket;1", "nsIServerSocket");
 				socket.init(port, false, -1);
 				socket.asyncListen(this);
-				this.__handlers[ port ] = handler;
+				*/
+				service.start(port);
+				this.__services[ port ] = service;
 				Trace("Listening on: " +port);
 			}
 			else {
@@ -33,7 +41,7 @@ Server = {
 	onSocketAccepted : function(socket, transport)	{
 		try {
 			var connection = new Connection();
-			var handler = this.__handlers[ socket.port ];
+			var handler = this.__services[ socket.port ];
 			connection.open(transport, handler);
 			Trace("onSocketAccepted");
 		}
@@ -48,6 +56,8 @@ Server = {
 		Trace("onStopListening: " +status);
 	}	
 }
+
+
 
 function Connection(transport)	{
 	this.__isOpen = false;
@@ -189,10 +199,10 @@ WebService = {
 var httpBodyRequest = new RegExp(/\r\n\r\n/gim);
 
 /** @constructor */
-function HttpService()	{
+function _HttpService()	{
 	this.__sessions = new BucketQueue();
 }
-HttpService.prototype = {
+_HttpService.prototype = {
 	__proto__ : WebService,
 	
 	onConnectionOpen : function(connection)		{
