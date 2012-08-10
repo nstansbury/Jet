@@ -14,7 +14,8 @@ var Jester = {
 					</li>',
 
 	run : function()	{
-		jQuery.get("http://localhost:8080/jester?run=resource://tests/jet/all.js", function(data){Jester.write(data)});	
+		var uri = document.getElementById("testfile").value;
+		jQuery.get("http://localhost:8080/jester?run=" +uri, function(data){Jester.write(data)});	
 	},
 	
 	write : function(data)	{
@@ -47,7 +48,8 @@ var Jester = {
 			ts = ts.replace("{testcases}", testcases.join(""));
 			testsuites.push(ts);
 		});
-		jQuery("#testResults").parent().append(testsuites.join(""));
+		jQuery("#testResults").empty();
+		jQuery("#testResults").append(testsuites.join(""));
 	},
 	
 	toggleSection : function(e)	{

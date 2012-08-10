@@ -60,7 +60,7 @@ ul > li:first-child {
 	background-image: url("up.png");
 	background-position: 4px 5px;
 }
-#testResults {
+#testRunner {
 	border-radius: 5px;
 	border: 2px solid #999999;
 	background-color: #cccccc;
