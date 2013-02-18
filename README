@@ -10,3 +10,8 @@ To run execute Jet.bat
 
 I'll get round to writing some more useful docs ASAP, however look at the Jester and Xulu extensions to get an idea of
 how to build them.
+
+Mozilla build 16.0b2 works as expected, builds after that fail to raise DOM events in the nsIAppShellService hiddenWindow
+
+See: https://bugzilla.mozilla.org/show_bug.cgi?id=791605
+And: https://bugzilla.mozilla.org/show_bug.cgi?id=565388
