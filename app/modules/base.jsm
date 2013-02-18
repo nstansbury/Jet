@@ -7,11 +7,15 @@ let EXPORTED_SYMBOLS = ["Jet", "RegisterNS", "RegisterAlias", "ImportNS", "Unloa
 
 
 Jet = {
+	version: 0.1,
+	
 	__scope : null,
 	
 	/** @param {Object} scope */
 	/** @returns {Void} */
 	Start : function(scope)	{
+		Trace("________Jet Server v"+this.version +"________");
+		
 		Jet.__scope = scope;
 		RegisterAlias("Lib", GetFile("app/libraries"));
 		RegisterAlias("Res", GetFile("app/res"));
@@ -194,15 +198,15 @@ function LoadScript(path, scope)	{
 function ReadFile(path, callback)	{
 	Components.utils.import("resource://gre/modules/NetUtil.jsm");
 	
-	function onDataAvailable()	{
-		if (!Components.isSuccessCode(status)) {
-			callback(status, null);
+	function onDataAvailable(inputStream, result)	{
+		var data = null;
+		if(Components.isSuccessCode(result)) {
+			data = NetUtil.readInputStreamToString(inputStream, inputStream.available());
 		}
-		var data = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-		callback(status, data);
+		callback(result, data);
 	}
 	
-	NetUtil.asyncFetch(file, onDataAvailable);
+	NetUtil.asyncFetch(path, onDataAvailable);
 }
 
 
