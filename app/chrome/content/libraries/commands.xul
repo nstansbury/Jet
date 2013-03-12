@@ -4,8 +4,9 @@
 	<script type="text/javascript;e4x=1" src="chrome://jet/content/libraries/commands.js"/>
 
 	<commandset>
-		<command id="cmdReloadChrome" label="Reload" tooltiptext="Reload Chrome" 
-				oncommand='Components.classes["@mozilla.org/chrome/chrome-registry;1"].getService(Components.interfaces.nsIXULChromeRegistry).reloadChrome();'/>
+		<command id="cmdReloadChrome" label="Reload" tooltiptext="Reload Chrome" oncommand="cmdReloadChrome();"/>
+		<command id="cmdRestartApp" label="Restart" tooltiptext="Restart App" oncommand="cmdRestartApp();"/>
+		<command id="cmdOpenJsConsole" label="Console" tooltiptext="JS Console" oncommand="cmdOpenJsConsole();"/>
 		
 	</commandset>
 

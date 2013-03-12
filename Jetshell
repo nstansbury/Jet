@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# See: https://developer.mozilla.org/en-US/docs/XPCShell_Reference
+# -s		Enable JavaScript strict mode
+# -v 180	Enable JavaScript 1.8
+# -w		Enable JavaScript warnings
+# -x		Enable E4X
+bin/xpcshell -s -v 180 -w -x app/start.js %1 %2 %3 %4 %5 %6 %7 %8 %9

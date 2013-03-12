@@ -2,8 +2,10 @@ content jet file:chrome/content/
 skin jet default file:chrome/skin/
 content branding file:chrome/branding/
 
+content res file:res/
+
 locale jet en-US file:chrome/locale/en-US/
 locale jet en-GB file:chrome/locale/en-GB/
 locale branding en-US file:chrome/locale/branding/
 
-resource Jet modules/
+resource Jet file:modules/

@@ -4,19 +4,21 @@
 <?xul-overlay href="overlays/libraries.xul"?>
 
 <window id="startup-window" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul" 
-	width="480" height="149"
+	width="890" height="640"
 	title="Jet Startup"
 	windowtype="jet:startup"
 	onload="loadStartup();" >
 	
-	<script type="text/javascript;e4x=1" src="resource://xulu/loader.js"/>
 	<script type="text/javascript;e4x=1" src="chrome://jet/content/startup.js"/>
-	<script type="text/javascript" src="chrome://xpcomviewer/content/global.js"/>
-	<script type="text/javascript" src="chrome://xpcomviewer/content/overlays/overlays.js"></script>
+	<!--script type="text/javascript" src="chrome://xpcomviewer/content/global.js"/>
+	<script type="text/javascript" src="chrome://xpcomviewer/content/overlays/overlays.js"/-->
 	<toolbox>
 		<toolbar>
-			<toolbarbutton oncommand="xpcomviewer.overlay.open();" class="menuitem-iconic icon16" label="XPC Viewer"/>
+			<!--toolbarbutton oncommand="xpcomviewer.overlay.open();" class="menuitem-iconic icon16" label="XPC Viewer"/-->
+			<toolbarbutton command="cmdReloadChrome" class="menuitem-iconic icon16"/>
+			<toolbarbutton command="cmdRestartApp" class="menuitem-iconic icon16"/>
+			<toolbarbutton command="cmdOpenJsConsole" class="menuitem-iconic icon16"/>
 		</toolbar>
 	</toolbox>
-	
+	<iframe flex="1" src="chrome://global/content/console.xul"/>
 </window>

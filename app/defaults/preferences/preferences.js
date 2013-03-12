@@ -14,6 +14,10 @@ pref("nglayout.debug.disable_xul_fastload", true);
 pref("javascript.options.jit.content", true);
 pref("javascript.options.jit.chrome", true);
 
+// Re-enable E4X
+pref("javascript.options.xml.chrome", true);
+pref("javascript.options.xml.content", true);
+  
 
 // Security Policy
 pref("security.checkloaduri", false);

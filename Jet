@@ -1,0 +1,3 @@
+#!/bin/sh
+
+bin/xulrunner /Users/nstansbury/Data/Dev/Jet/app/application.ini -console -chromebug -purgecaches
