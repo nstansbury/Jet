@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Jet.Commands</title>
+		<script type="text/javascript">
+			var worker = new Worker("commands.js");
+			worker.id = "XXX";
+			worker.onmessage = function(e){
+				console.log("Master OnMessage");
+				console.log(e);
+			}
+			worker.postMessage("This is a message");
+			
+		</script>
+	</head>
+	<body></body>
+</html>

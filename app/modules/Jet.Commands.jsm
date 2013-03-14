@@ -1,29 +1,44 @@
 let EXPORTED_SYMBOLS = ["CommandController", "CommandHandler", "Command", "CommandTypes"];
 
-/*
-	The Command Controller maintains one or more Command Handlers
-	And routes Command requests to the correct Command Handler
-	Each Command Handler invokes its' Commands in its' own thread context
-	The Controller queues Command requests when all its' handlers are busy
-*/
 
+Master
+	CommandControllerProxy
+		Worker
+			CommandController
+			CommandHandlerProxy
+				Slave
+					CommandHandler
 
 
 function CommandController(file){
-	var worker = new Worker("Jet.Commands.js");
-	worker.onmessage = this.raiseEvent;
-	worker.postMessage("jet://register" +file);
+	this.worker = new Worker("CommandController.js");
 }
+
 CommandController.prototype = {
-	raiseEvent : function raiseEvent(e){
+	raiseEvent : function raiseEvent(e){			// This routes messages to other CommandControllers
+		
+	},
+	
+	dispatchCommand : function(data, callback){		// This dispatches messages from other CommandControllers
+		this.worker.postMessage(data);
+	},
+	
+	hasCommand : function(cmd){
 		
 	}
 }
 
+CommandTypes = {
+	Master : 0x0,
+	Worker : 0x1,
+	Slave : 0x2
+}
+
 CommandHandler = {
+	callstack : [],
 	
 	commands : {
-		"jet://register" : registerCommands
+		"jet://commands/register" : registerCommands
 	},
 	
 	registerCommands : function(e){
@@ -37,28 +52,54 @@ CommandHandler = {
 		}
 	},
 	
-	dispatchCommand : function(e){
-		var result = this.commands[ cmd ].dispatch(e);
-		postMessage(result);
+	dispatchCommand : function(data, callback, async){
+		if(callback){
+			onmessage = function asyncHandler(e){
+				onmessage = dispatchCommand;		// We should check someone hasn't tried to dispatch a new command into a handler waiting for an async result
+				callback(e.data);
+			}
+		}
+			
+		var command = this.commands[ data.url ];
+		if(command && command.type == CommandTypes.Worker){		// This handler can dispatch command
+			return command.dispatch(data, callback);
+		}
+		else {													// Not a command in this handler - post it to controller
+			postMessage(data);
+			return false;
+		}
 	}
 }
 
-CommandTypes = {
-	Master : 0x0,
-	Worker : 0x1,
-	Slave : 0x2
+function dispatchCommand(e){
+	CommandHandler.dispatchCommand(e.data)
 }
 
+onmessage = dispatchCommand;
+
+
+Command = {
+	/** @type {Jet.Commands.CommandTypes} */
+	type : null,
+	
+	/** @returns {Boolean} */
+	register : function(){},
+	
+	/** @param {Object} data */
+	/** @param {Function} [callback] */
+	/** @returns {Boolean} */
+	dispatch : function(data, callback){}
+}
+
+
 registerCommands = {
-	type : CommandHandler.CommandTypes.Worker,
+	type : CommandTypes.Worker,
 	
 	register : function(){
-		return "jet://register";
+		return "jet://commands/register";
 	},
 	
 	dispatch : function(e){
 		CommandHandler.registerCommands(e);
 	}
 }
-
-onmessage = function(e){CommandHandler.dispatchCommand(e)};
