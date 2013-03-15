@@ -1,13 +1,66 @@
 let EXPORTED_SYMBOLS = ["CommandController", "CommandHandler", "Command", "CommandTypes"];
 
+/*
+	EndpointService
+		Master
+			CommandControllerProxy
+				Worker
+					CommandController
+					CommandHandlerProxy
+						Slave
+							CommandHandler
+	
+	Dispatch concrete commands?
+	
+	var cmd = new Command(url, callback);
+	cmd.params[ "prop" ] = x;
+	
+	Controller.dispatchCommand([cmd, cmd]);
+	
+	Command
+		id
+		type
+		messageId
+		params
+		
+		
+	We must remain RESTful otherwise the Command pattern breaks and this is just RPC
+	
+*/
 
-Master
-	CommandControllerProxy
-		Worker
-			CommandController
-			CommandHandlerProxy
-				Slave
-					CommandHandler
+/** @param {String} commandfile */
+/** @returns {CommandControllerProxy} */
+function CommandControllerProxy(commandfile){
+	var self = this;
+	this.__worker = new Worker("CommandController.js");
+	this.__worker.onmessage = function(e){self.raiseEvent(e);};
+}
+CommandControllerProxy.prototype = {
+	__worker : null,
+	
+	__stack : {},
+	
+	/** @param {Command} command */
+	/** @param {Function} callback */
+	/** @returns {Void} */
+	dispatchCommand : function(command, callback){		// This dispatches messages from other CommandControllers
+		this.__stack[ command.id ] = command;
+		this.__worker.postMessage(command.toMessage());
+	},
+	
+	/** @param {MessageEvent} e */
+	/** @returns {Void} */
+	raiseEvent : function raiseEvent(e){			// This routes messages to other CommandControllers
+		// NB. We're running on the Master thread here!
+		
+	},
+	
+	/** @param {String} cmd */
+	/** @returns {Boolean} */
+	hasCommand : function(cmd){
+		
+	}
+}
 
 
 function CommandController(file){

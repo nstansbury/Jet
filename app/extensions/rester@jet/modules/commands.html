@@ -5,13 +5,33 @@
 		<meta charset="UTF-8">
 		<title>Jet.Commands</title>
 		<script type="text/javascript">
+			var stack = {};
+			
+			function callback(){
+				console.log("____Callback");
+			}
+			
 			var worker = new Worker("commands.js");
 			worker.id = "XXX";
 			worker.onmessage = function(e){
 				console.log("Master OnMessage");
 				console.log(e);
+				var msg = e.data;
+				stack[ msg.messageId ](msg.body);
 			}
-			worker.postMessage("This is a message");
+			
+			var request = {
+				method : "GET",
+				url : "jet://some/url"
+			}
+			
+			var ts = Date.now();
+			stack[ts] = callback;
+			var message = {
+				messageId : ts,
+				body : request
+			}
+			worker.postMessage(message);
 			
 		</script>
 	</head>
