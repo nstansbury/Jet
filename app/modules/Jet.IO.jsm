@@ -1,44 +1,52 @@
-var EXPORTED_SYMBOLS = [];
+let EXPORTED_SYMBOLS = ["OperationController"];
 
 Components.utils.import("resource://jet/base.jsm");
-//ImportNS("Jet.DOM", this);
 
-Trace("WORKER");
-function Work(doWork, workContext)	{
-	this.doWork = doWork;
-	this.workContext = workContext;
+OperationDispatchTypes = {
+	Master : 0x0,
+	Worker : 0x1,
+	Slave : 0x2
 }
-Work.prototype = {
-	QueryInterface: function(iid) {
-		if (iid.equals(Components.interfaces.nsIRunnable) || iid.equals(Components.interfaces.nsISupports))	{
-			return this;
-		}
-		throw Components.results.NS_ERROR_NO_INTERFACE;
-	},
-	run: function() {
-		Trace("Running Work");
-		this.doWork(this.workContext);
+
+function OperationController(file){
+	var OperationController = this;
+	this.__worker = new Worker("Jet.IO.Controller.js");
+	this.__worker.onmessage = function(e){
+		// The first message is an array of operations that the controller can dispatch
+		OperationController.__operations = e.data;
+		OperationController.__worker.onmessage = OperationController.requestOperation(e.data);
 	}
-};
-
-
-function dumpStuff()	{
-	Trace("Dumping Stuff");
+	var op = {
+		resource : file,
+		action : "GET",
+		object : 5		// Max handlers
+	}
+	this.__worker.postMessage(op);
 }
 
-var threadManager = Components.classes["@mozilla.org/thread-manager;1"].getService();
-
-var target1 = threadManager.currentThread;
-var target2 = threadManager.newThread(0);
-
-
-//target1.dispatch(new Work(dumpStuff), Components.interfaces.nsIThread.DISPATCH_NORMAL);
-//target1.dispatch(new Work(dumpStuff), Components.interfaces.nsIThread.DISPATCH_NORMAL);
-
-
-var worker = new ChromeWorker("file:///D:/Dev/Jet/app/modules/Jet.IO.jsm");  
-	worker.addEventListener('message', function(event) {  
-		Trace("Called back by the worker!\n");  
-	}, false);  
-  
-	worker.postMessage({}); // start the worker.
+OperationController.prototype = {
+	__operations : null,
+	
+	/** @param {Operation} op */
+	/** @returns {Void} */
+	dispatchOperation : function(op, callback){		// This dispatches Operations into an OperationControllerDelegate
+		if(this.canDispatch(op)){
+			this.__worker.postMessage(op);	
+		}
+	},
+	
+	requestOperation : function(op){				// This routes messages to other OperationControllers
+		if(Array.isArray(op)){
+			
+		}
+		else {
+			
+		}
+	},
+	
+	/** @param {Operation} op */
+	/** @returns {Boolean} */
+	canDispatch : function(op){
+		return (this.__operations[ op.resource ] != undefined);
+	}
+}
