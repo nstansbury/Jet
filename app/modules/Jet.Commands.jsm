@@ -16,10 +16,12 @@ Operation
 
 //---------------------------------------------------------------
 function OperationController(file){
+	var OperationController = this;
 	this.__worker = new Worker("OperationControllerDelegate.js");
-	this.__worker.onessage = function(e){			// This routes messages to other OperationControllers
-		var operation = e.data;
-		
+	this.__worker.onmessage = function(e){
+		// The first message is an array of operations that the controller can dispatch
+		OperationController.__operations = e.data;
+		OperationController.__worker.onmessage = OperationController.requestOperation(e.data);
 	}
 	var op = {
 		resource : file,
@@ -30,6 +32,7 @@ function OperationController(file){
 }
 
 OperationController.prototype = {
+	__operations : null,
 	
 	/** @param {Operation} op */
 	/** @returns {Void} */
@@ -39,10 +42,19 @@ OperationController.prototype = {
 		}
 	},
 	
+	requestOperation : function(op){				// This routes messages to other OperationControllers
+		if(Array.isArray(op)){
+			
+		}
+		else {
+			
+		}
+	},
+	
 	/** @param {Operation} op */
 	/** @returns {Boolean} */
 	canDispatch : function(op){
-		
+		return (this.__operations[ op.resource ] != undefined);
 	}
 }
 //---------------------------------------------------------------
@@ -91,9 +103,9 @@ onmessage = function(e){
 }
 
 
-function OperationHandler(controller, file){
+function OperationHandler(file){
 	this.__worker = new Worker("OperationHandlerDelegate.js");
-	this.__worker.onessage = function(e){controller.requestOperation(e.data)};		// This recieves messages from OperationHandlerDelegates
+	this.__worker.onessage = function(e){OperationControllerDelegate.requestOperation(e.data)};		// This recieves messages from OperationHandlerDelegates
 	var op = {
 		resource : file,
 		action : "GET",
@@ -130,6 +142,21 @@ OperationHandlerDelegate = {
 
 onmessage = function(e){
 	importScripts(e.data.resource);
+	var operations = [];
+	for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
+		var symbol = EXPORTED_SYMBOLS[ i ];
+		var operation = this[ symbol ];
+		operation.register();
+		// Must register it as a master or worker so dispatcher can run on Main or Worker thread
+		var op = {
+			resource : operation.resource,
+			action : operation.action,
+			object : operation.dispatchType
+		}
+		this.__operations[ operation.resource ] = operation;
+		operations.push(op);
+	}
+	OperationHandlerDelegate.dispatchOperation(operations);
 	self.onmessage = function(e){
 		OperationHandlerDelegate.requestOperation(e.data);
 		OperationHandlerDelegate.dispatchOperation("FREE");
@@ -144,24 +171,6 @@ OperationDispatchTypes = {
 	Slave : 0x2
 }
 
-OperationHandler = {
-	callstack : [],
-	
-	operation : {
-		"jet://commands/register" : registerCommands
-	},
-	
-	registerCommands : function(e){
-		importScripts(e.data);
-		for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
-			var symbol = EXPORTED_SYMBOLS[ i ];
-			var commandUri = symbol.register();
-			// Must register it as a master or worker so dispatcher can run on Main or Worker thread
-			postMessage("registerCommand " +commandUri);
-			this.commands[ symbol ] = this[ symbol ];
-		}
-	}
-}
 
 
 
@@ -178,8 +187,8 @@ Operation = {
 }
 
 
-registerCommands = {
-	type : CommandTypes.Worker,
+registerOperation = {
+	type : OperationDispatchTypes.Worker,
 	
 	register : function(){
 		return "jet://commands/register";
