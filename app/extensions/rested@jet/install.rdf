@@ -11,8 +11,8 @@
 			</Description>
 		</em:targetApplication>
 		
-		<em:id>rester@jet</em:id>
-		<em:name>Rester</em:name>
+		<em:id>rested@jet</em:id>
+		<em:name>RESTed</em:name>
 		<em:version>0.1</em:version>
 		<em:description>REST Test Server</em:description>
 		<em:homepageURL>http://neilstansbury.com/jet</em:homepageURL>

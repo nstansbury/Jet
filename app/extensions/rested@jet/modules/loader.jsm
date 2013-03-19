@@ -2,7 +2,7 @@
 	
 	Components.utils.import("resource://jet/base.jsm");
 	
-	ImportNS("Jester", this);
-	Jester.App.start();
+	ImportNS("Rested", this);
+	
 
 	
