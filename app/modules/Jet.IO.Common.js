@@ -27,12 +27,14 @@ Jet.IO.Operation = {
 	/** @type {String} */
 	resource : "",
 	
-	/** @returns {Jet.IO.OperationActions} */
+	/** @type {Jet.IO.OperationActions} */
 	action : Jet.IO.OperationActions.Get,
 	
-	/** @returns {Object} */
+	/** @type {Object} */
 	object : null,
 
+	/** @type {Number} */
+	status : 0,
 	
 	/** @returns {Void} */
 	register : function register(){},
@@ -44,46 +46,52 @@ Jet.IO.Operation = {
 
 Jet.IO.DispatchRequest = {
 	
-	/** @type {String} */
-	id : "",
+	/** @type {Number} */
+	id : 0,
 	
 	/** @type {[Operation]} */
 	operations : []
 }
 
-Jet.IO.OperationRequests = {
-	__timestamp : Date.now(),
-	
-	__requests : {},
-	
-	/** @param {Jet.IO.OperationRequest} request */
-	/** @returns {Jet.IO.OperationRequest} */
-	add : function(request){
-		var newRequest = this.createRequest(request.operations);
-		this.__requests[ newRequest.id ] = request;
-		return newRequest;
+
+
+
+Jet.IO.Queue = function Queue()	{
+	this.clear();
+}
+Jet.IO.Queue.prototype = {
+	queue : function(item)	{
+		var tail = {
+			next : null,
+			prev : null,
+			item : item
+		}
+		[this.tail] = [tail];
+		if(tail)	{
+			this.tail.prev = tail;
+			tail.next = this.tail;
+		}
+		else {
+			this.head = this.tail;	
+		}
 	},
 	
-	/** @param {Jet.IO.OperationRequest} request */
-	/** @returns {Jet.IO.OperationRequest} */
-	remove : function(request){
-		var oldRequest = __requests[ request.id ];
-		oldRequest.operations = request.operations
-		return oldRequest;
+	dequeue : function()	{
+		var head = this.head.next;
+		if(head)	{
+			[this.head] = [head];
+		}
+		else {
+			[this.tail] = [head];
+		}
+		return head.item;
 	},
 	
-	/** @param {[Operation]} operations */
-	/** @returns {Jet.IO.OperationRequest} */
-	createRequest : function createRequest(operations){
-		return {
-			id : (this.__timestamp++),
-			operations : Array.isArray(operations) ? operations : [ operations ]
-		};
+	peek : function(){
+		return this.head;
 	},
 	
-	/** @param {Jet.IO.OperationRequest} request */
-	/** @returns {Boolean} */
-	hasRequest : function(request){
-		return this.__requests[ request.id ] ? true : false;
+	clear : function()	{
+		this.head = this.tail = null;
 	}
 }

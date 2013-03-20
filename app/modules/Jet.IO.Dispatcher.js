@@ -3,16 +3,14 @@ importScripts("Jet.IO.Common.js");
 
 Jet.IO.OperationDispatcher = {
 	
-	__handlers : [],
+	/** @type {Jet.IO.Queue} */
+	workToDo : new Jet.IO.Queue(),
 	
-	__opqueue : [],
+	/** @type {Jet.IO.Queue} */
+	handlers : new Jet.IO.Queue(),
 	
-	__requests : Jet.IO.OperationRequests,
-	
-	/** @returns {Jet.IO.OperationRequests} */
-	get requests(){
-		return this.__requests;
-	},
+	/** @type {Object} */
+	requests : {},
 	
 	/** @param {String} file */
 	/** @returns {Void} */
@@ -21,11 +19,11 @@ Jet.IO.OperationDispatcher = {
 		var handler = new Jet.IO.OperationHandler(file);
 		handler.onready = function(){
 			// When a Handler becomes ready give it some work or re-queue it
-			if(dispatcher.__opqueue.length){
-				handler.dispatchOperation(dispatcher.__opqueue.pop());
+			if(dispatcher.workToDo.peek()){
+				handler.dispatchOperation(dispatcher.workToDo.dequeue());
 			}
 			else {
-				this.__handlers.push(handler);	
+				this.handlers.queue(handler);	
 			}
 		}
 	},
@@ -33,41 +31,34 @@ Jet.IO.OperationDispatcher = {
 	/** @param {Jet.IO.OperationRequest} request */
 	/** @returns {Void} */
 	dispatchRequest : function(request){		// This dispatches Operation requests into an Operation Handler
-		if(this.__handlers.length){
-			this.__handlers.pop().dispatchRequest(request);
+		if(this.handlers.peek()){
+			this.handlers.dequeue().dispatchRequest(request);
 		}
 		else {
 			// We have no Handler available
-			this.__opqueue.push(request);
+			this.workToDo.queue(request);
 		}
 	},
 	
 	/** @param {Jet.IO.OperationRequest} request */
+	/** @param {Function} onrequest */
 	/** @returns {Void} */
-	requestDispatch : function(request){
-		// A new request bubbling up must have affinity for a handler - unless action is Signal
+	requestDispatch : function(request, onrequest){
+		if(this.requests[ request.id ] != undefined){
+			var callback = this.requests[ request.id ];
+			delete this.requests[ request.id ];
+			callback(unwrapRequest(request));
+			return;
+		}
 		
-		/*	If this is a new request (not in the queue)
-				Wrap it and store it in the request queue
-					If we canDispatch()
-						Dispatch the wrapped request to another handler
-					Else
-						postMessage(request) to controller
-			Else
-				This is a request response
-					Unwrap the request from the queue
-					If we canDispatch()
-						It must go back to the same handler that dispatched it
-					Else
-						postMessage(request)
-		*/
-				
-		if(this.canDispatch(op)){
-			this.dispatchRequest(op);
+		request = wrapRequest(request);
+		this.requests[ request.id ] = onrequest;
+		
+		if(this.canDispatch(request.operations[0])){
+			this.dispatchRequest(request, onrequest);
 		}
 		else {
-			// We can't handle this operation request so post to parent Controller
-			postMessage(op);	
+			postMessage(request);
 		}
 	},
 	
@@ -75,6 +66,15 @@ Jet.IO.OperationDispatcher = {
 	/** @returns {Boolean} */
 	canDispatch : function(op){
 		return false;
+	},
+	
+	/** @param {MessageEvent} e */
+	/** @returns {Void} */
+	onmessage : function(e){
+		function onrequest(request){
+			postMessage(request);
+		}
+		this.requestDispatch(e.data, onrequest);
 	}
 }
 
@@ -84,10 +84,8 @@ onmessage = function(e){
 	for(var i = 0; i < op.object; i++){
 		Jet.IO.OperationDispatcher.createHandler(op.resource);
 	}
-	onmessage = function(e){
-		Jet.IO.OperationDispatcher.dispatchRequest(e.data);
-	}
 	
+	onmessage = function(e){Jet.IO.OperationDispatcher.onmessage(e)};
 	
 	// GET the handlers' operations
 	var op = {
@@ -101,9 +99,6 @@ onmessage = function(e){
 
 Jet.IO.OperationHandler = function OperationHandler(file){
 	var handler = this;
-	function onrequest(e){
-		handler.requestDispatch(e.data);
-	}
 	this.__worker = new Worker("../../app/modules/Jet.IO.Handler.js");
 	
 	// We post a message into the delegate Operation Handler to initialise itself & its operations
@@ -111,7 +106,7 @@ Jet.IO.OperationHandler = function OperationHandler(file){
 	this.__worker.onmessage = function(e){
 		var op = e.data;
 		if(op.status == 200){
-			handler.__worker.onmessage = onrequest;
+			handler.__worker.onmessage = function(e){handler.onmessage(e)};
 			handler.isReady = true;
 		}
 		else {
@@ -128,7 +123,15 @@ Jet.IO.OperationHandler = function OperationHandler(file){
 	this.__worker.postMessage(op);
 }
 Jet.IO.OperationHandler.prototype = {
+	__worker : null,
+	
 	__isReady : false,
+	
+	/** @type {Number} */
+	id : Date.now(),
+	
+	/** @type {Jet.IO.Queue} */
+	workToDo : new Jet.IO.Queue(),
 	
 	/** @param {Boolean} */
 	set isReady(value){
@@ -148,17 +151,38 @@ Jet.IO.OperationHandler.prototype = {
 	/** @param {Jet.IO.OperationRequest} request */
 	/** @returns {Void} */
 	dispatchRequest : function(request){		// This dispatches Operation requests into the delegate Operation Handler
-		this.isReady = false;
-		this.__worker.postMessage(request);	
+		if(this.isReady()){
+			this.isReady = false;
+			this.__worker.postMessage(request);	
+		}
+		else {
+			this.workToDo.queue(request);
+		}	
 	},
 	
 	/** @param {Jet.IO.OperationRequest} request */
 	/** @returns {Void} */
 	requestDispatch : function(request){
-		if(request == null){
-			this.isReady = true;
+		if(request == null){			// A null request means the Handler is free
+			if(this.workToDo.peek()){
+				this.dispatchRequest(this.workToDo.dequeue());
+			}
+			else {
+				this.isReady = true;
+			}
 			return;
 		}
-		Jet.IO.OperationDispatcher.requestDispatch(request)
+		// NB. A new request bubbling up must have affinity for the handler requesting it - unless action is Jet.IO.OperationActions.Signal
+		var handler = this;
+		function onrequest(request){
+			handler.dispatchRequest(request);
+		}
+		Jet.IO.OperationDispatcher.requestDispatch(request, onrequest)
 	},
+	
+	/** @param {MessageEvent} e */
+	/** @returns {Void} */
+	onmessage : function(e){
+		this.requestDispatch(e.data);
+	}
 }

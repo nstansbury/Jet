@@ -3,16 +3,11 @@ importScripts("Jet.IO.Common.js");
 
 Jet.IO.OperationHandler = {
 	
-	__requests : Jet.IO.OperationRequests,
-	
-	/** @returns {Jet.IO.OperationRequests} */
-	get requests(){
-		return this.__requests;
-	},
+	__requests : {},
 	
 	__operations : {},
 	
-	/** @returns {Object} */
+	/** @returns {[Jet.IO.Operations]} */
 	get operations(){
 		return this.__operations;
 	},
@@ -34,15 +29,8 @@ Jet.IO.OperationHandler = {
 	/** @returns {Void} */
 	dispatchOperation : function(operation, callback){
 		// We never dispatch into ourselves. This ensures any operations dispatched by this thread remain asychronous
-		
-		requests[ newRequest.id ] = oncomplete;
-		
-		requests[ newRequest.id ] = oldRequest
-		
-		
-		// Create new Request & add to Queue
-		// Create new Request, 
-		
+		// Todo
+		// Build request, store in request table & post
 		
 		var request = this.requests.create(operation, callback);
 		postMessage(request);
@@ -52,6 +40,8 @@ Jet.IO.OperationHandler = {
 	/** @param {Jet.IO.OperationRequest} request */
 	/** @returns {Void} */
 	_requestDispatch : function(request){
+		// Could be a response to a request - check here
+		
 		for(var i = 0; i < request.operations.length; i++){
 			var operation = request.operations[i];
 			// Dispatch a concrete operation object
