@@ -1,3 +1,4 @@
+"use strict";
 
 importScripts("Jet.IO.Common.js");
 
@@ -35,30 +36,25 @@ Jet.IO.OperationDispatcher = {
 			this.handlers.dequeue().dispatchRequest(request);
 		}
 		else {
-			// We have no Handler available
-			this.workToDo.queue(request);
+			this.workToDo.queue(request);	// We have no Handler available
 		}
 	},
 	
 	/** @param {Jet.IO.OperationRequest} request */
-	/** @param {Function} onrequest */
+	/** @param {Function} oncomplete */
 	/** @returns {Void} */
-	requestDispatch : function(request, onrequest){
-		if(this.requests[ request.id ] != undefined){
-			var callback = this.requests[ request.id ];
-			delete this.requests[ request.id ];
-			callback(unwrapRequest(request));
-			return;
-		}
-		
-		request = wrapRequest(request);
-		this.requests[ request.id ] = onrequest;
-		
-		if(this.canDispatch(request.operations[0])){
-			this.dispatchRequest(request, onrequest);
+	requestDispatch : function(request, oncomplete){
+		if(Jet.IO.Requests.hasRequest(request)){
+			Jet.IO.Requests.endRequest(request);
 		}
 		else {
-			postMessage(request);
+			var newRequest = Jet.IO.Requests.appendRequest(request, oncomplete);
+			if(this.canDispatch(newRequest.operations[0])){
+				this.dispatchRequest(newRequest);
+			}
+			else {
+				postMessage(newRequest);
+			}
 		}
 	},
 	
@@ -71,10 +67,10 @@ Jet.IO.OperationDispatcher = {
 	/** @param {MessageEvent} e */
 	/** @returns {Void} */
 	onmessage : function(e){
-		function onrequest(request){
+		function oncomplete(request){
 			postMessage(request);
 		}
-		this.requestDispatch(e.data, onrequest);
+		this.requestDispatch(e.data, oncomplete);
 	}
 }
 
@@ -96,7 +92,8 @@ onmessage = function(e){
 	Jet.IO.OperationDispatcher.dispatchOperation(op);
 }
 
-
+/** @param {String} file */
+/** @constructor */
 Jet.IO.OperationHandler = function OperationHandler(file){
 	var handler = this;
 	this.__worker = new Worker("../../app/modules/Jet.IO.Handler.js");
@@ -174,10 +171,10 @@ Jet.IO.OperationHandler.prototype = {
 		}
 		// NB. A new request bubbling up must have affinity for the handler requesting it - unless action is Jet.IO.OperationActions.Signal
 		var handler = this;
-		function onrequest(request){
+		function oncomplete(request){
 			handler.dispatchRequest(request);
 		}
-		Jet.IO.OperationDispatcher.requestDispatch(request, onrequest)
+		Jet.IO.OperationDispatcher.requestDispatch(request, oncomplete)
 	},
 	
 	/** @param {MessageEvent} e */

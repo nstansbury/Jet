@@ -1,3 +1,4 @@
+"use strict";
 
 if(!this.Jet){
 	Jet = {IO : {}};	
@@ -44,16 +45,66 @@ Jet.IO.Operation = {
 	dispatch : function dispatch(op){}
 }
 
-Jet.IO.DispatchRequest = {
+Jet.IO.OperationRequest = {
 	
 	/** @type {Number} */
 	id : 0,
 	
-	/** @type {[Operation]} */
+	/** @type {[Jet.IO.Operation]} */
 	operations : []
 }
 
 
+Jet.IO.Requests = {
+	_requestid : Date.now(),	// Saves us Date.now()ing for every request
+	
+	_requests : {},
+	
+	/** @param {Jet.IO.Operation} [operations] */
+	/** @param {Function} oncomplete */
+	/** @returns {Jet.IO.OperationRequest} */
+	createRequest : function newRequest(operations, oncomplete){
+		var request = {
+			id : this._requestid++,
+			operations : operations
+		}
+		
+		this._requests[ request.id ] = {
+			original : request,
+			oncomplete : oncomplete
+		}
+		return request;
+	},
+	
+	/** @param {Jet.IO.OperationRequest} request */
+	/** @param {Function} oncomplete */
+	/** @returns {Jet.IO.OperationRequest} */
+	appendRequest : function createRequest(request, oncomplete){
+		var newRequest = {
+			id : this._requestid++,
+			operations : request.operations
+		}
+		this._requests[ newRequest.id ] = {
+			original : request,
+			oncomplete : oncomplete
+		}
+		return newRequest;
+	},
+	
+	/** @param {Jet.IO.OperationRequest} request */
+	/** @returns {Boolean} */
+	hasRequest : function hasRequest(request){
+		return (this._requests[ request.id ]) ? true : false;
+	},
+	
+	/** @param {Jet.IO.OperationRequest} request */
+	/** @returns {Void} */
+	endRequest : function endRequest(request){
+		var envelope = this._requests[ request.id ];
+		delete this._requests[ request.id ];
+		envelope.oncomplete.call(envelope.original, envelope.original);
+	}
+}
 
 
 Jet.IO.Queue = function Queue()	{

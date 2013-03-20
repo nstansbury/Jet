@@ -1,3 +1,5 @@
+"use strict";
+
 /*
 let EXPORTED_SYMBOLS = ["OperationController"];
 

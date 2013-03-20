@@ -1,3 +1,4 @@
+"use strict";
 
 importScripts("Jet.IO.Common.js");
 
@@ -25,14 +26,12 @@ Jet.IO.OperationHandler = {
 		this.__operations[ operation.resource ] = operation;
 	},
 	
-	/** @param {Object} operation */
+	/** @param {Jet.IO.Operation} operation */
+	/** @param {Function} oncomplete */
 	/** @returns {Void} */
-	dispatchOperation : function(operation, callback){
+	dispatchOperation : function(operation, oncomplete){
 		// We never dispatch into ourselves. This ensures any operations dispatched by this thread remain asychronous
-		// Todo
-		// Build request, store in request table & post
-		
-		var request = this.requests.create(operation, callback);
+		var request = Jet.IO.Requests.createRequest(operation, oncomplete);
 		postMessage(request);
 	},
 	
@@ -40,13 +39,20 @@ Jet.IO.OperationHandler = {
 	/** @param {Jet.IO.OperationRequest} request */
 	/** @returns {Void} */
 	_requestDispatch : function(request){
-		// Could be a response to a request - check here
-		
-		for(var i = 0; i < request.operations.length; i++){
-			var operation = request.operations[i];
-			// Dispatch a concrete operation object
-			var op = this.getOperation(operation);
-			op.dispatch(operation);
+		if(Jet.IO.Requests.hasRequest(request)){
+			Jet.IO.Requests.endRequest(request);
+		}
+		else { // This is a request that we dispatch this operation
+			// Get a Jet.IO.Operation delegate
+			var delegate = this.getOperation(operation);
+			
+			var operation = request.operations[0];
+			operation.oncomplete = function(operation){
+				delete operation.oncomplete;				// Because it won't serialise across thread boundaries otherwise
+				request.operations = [operation];
+				postMessage(request);
+			}
+			delegate.dispatch.call(operation);
 		}
 		// We always free the handler after dispatch returns
 		postMessage(null);
@@ -88,7 +94,7 @@ getHandlerOperations = {
 		}
 	},
 	
-	dispatch : function(operation){
+	dispatch : function(){
 		// Return the list of operations this handler can dispatch
 		var opArray = [];
 		var operations = Jet.IO.OperationHandler.operations;
@@ -101,7 +107,7 @@ getHandlerOperations = {
 			opArray.push(op);
 		}
 		operation.object = opArray;
-		Jet.IO.OperationHandler.dispatchOperation(operation);
+		this.oncomplete(operation);
 	}
 	
 }
