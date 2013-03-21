@@ -1,7 +1,7 @@
 "use strict";
 
 if(!this.Jet){
-	Jet = {IO : {}};	
+	var Jet = {IO : {}};	
 }
 
 Jet.IO.OperationDispatchTypes = {
@@ -64,13 +64,15 @@ Jet.IO.Requests = {
 	/** @param {Function} oncomplete */
 	/** @returns {Jet.IO.OperationRequest} */
 	createRequest : function newRequest(operations, oncomplete){
+		operations = Array.isArray(operations) ? operations : [operations];
 		var request = {
 			id : this._requestid++,
 			operations : operations
 		}
 		
 		this._requests[ request.id ] = {
-			original : request,
+			original : null,
+			operations : operations,
 			oncomplete : oncomplete
 		}
 		return request;
@@ -102,7 +104,12 @@ Jet.IO.Requests = {
 	endRequest : function endRequest(request){
 		var envelope = this._requests[ request.id ];
 		delete this._requests[ request.id ];
-		envelope.oncomplete.call(envelope.original, envelope.original);
+		if(request.original == null){
+			envelope.oncomplete(envelope.operations);
+		}
+		else {
+			envelope.oncomplete.call(envelope.original, envelope.original);	
+		}
 	}
 }
 
@@ -115,9 +122,11 @@ Jet.IO.Queue.prototype = {
 		var tail = {
 			next : null,
 			prev : null,
-			item : item
+			item : null
 		}
-		[this.tail] = [tail];
+		tail.item = item;	// Just don't ask why - but the destructuring assignment fails if the item property is set on the object initialisation!!
+		
+		[this.tail, tail] = [tail, this.tail];
 		if(tail)	{
 			this.tail.prev = tail;
 			tail.next = this.tail;
@@ -130,10 +139,11 @@ Jet.IO.Queue.prototype = {
 	dequeue : function()	{
 		var head = this.head.next;
 		if(head)	{
-			[this.head] = [head];
+			[this.head, head] = [head, this.head];
+			return head.item;
 		}
 		else {
-			[this.tail] = [head];
+			[this.tail, head] = [head, this.tail];
 		}
 		return head.item;
 	},

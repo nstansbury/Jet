@@ -24,7 +24,7 @@ Jet.IO.OperationDispatcher = {
 				handler.dispatchOperation(dispatcher.workToDo.dequeue());
 			}
 			else {
-				this.handlers.queue(handler);	
+				Jet.IO.OperationDispatcher.handlers.queue(handler);	
 			}
 		}
 	},
@@ -75,21 +75,16 @@ Jet.IO.OperationDispatcher = {
 }
 
 onmessage = function(e){
-	var op = e.data;
+	var request = e.data;
+	var operation = request.operations[0];
+	var count = operation.object;
 	// Create an OperationHandler for each slave thread
-	for(var i = 0; i < op.object; i++){
-		Jet.IO.OperationDispatcher.createHandler(op.resource);
+	for(var i = 0; i < count; i++){
+		Jet.IO.OperationDispatcher.createHandler(operation.resource);
 	}
-	
+	//____DEBUGGER
+	postMessage(operation.resource);
 	onmessage = function(e){Jet.IO.OperationDispatcher.onmessage(e)};
-	
-	// GET the handlers' operations
-	var op = {
-		resource : file,
-		action : Jet.IO.OperationActions.Get,
-		object : null,
-	}
-	Jet.IO.OperationDispatcher.dispatchOperation(op);
 }
 
 /** @param {String} file */

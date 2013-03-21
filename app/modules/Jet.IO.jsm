@@ -5,6 +5,7 @@ let EXPORTED_SYMBOLS = ["OperationController"];
 
 Components.utils.import("resource://jet/base.jsm");
 
+LoadScript("resource://jet/Jet.IO.Common.js", this);
 Service
 	Master
 		OperationController
@@ -17,44 +18,69 @@ Service
 */
 
 function OperationController(file){
-	var opController = this;
+	var controller = this;
 	this.__worker = new Worker("../../app/modules/Jet.IO.Dispatcher.js");
-	this.__worker.onmessage = function(e){
-		console.log(e.data);
-		return;
-		// The first message is an array of operations that the controller can dispatch
-		opController.__operations = e.data;
-		opController.__worker.onmessage = opController._requestDispatch(e.data);
-	}
-	var op = {
+	
+	this.__worker.onmessage = function(e){console.log(e.data)}
+	
+	//this.__worker.onmessage = function(e){controller.onmessage(e)};
+	
+	// GET the handlers' operations
+	var getOperations = {
 		resource : file,
 		action : Jet.IO.OperationActions.Get,
 		object : 5		// Max handlers
 	}
-	this.__worker.postMessage(op);
+	controller.__operations[ file ] = getOperations;
+	
+	function oncomplete(operations){
+		console.log(operations);
+	}
+	this.dispatchOperation(getOperations, oncomplete)
+	
 }
 
 OperationController.prototype = {
-	__operations : [],
+	__operations : {},
 	
-	/** @param {Operation} op */
+	/** @param {Jet.IO.Operation} operation */
+	/** @param {Function} oncomplete */
 	/** @returns {Void} */
-	dispatchOperation : function(op, callback){		// This dispatches Operations into an Operation Dispatcher
-		if(this.canDispatch(op)){
-			this.__worker.postMessage(op);	
+	dispatchOperation : function(operation, oncomplete){
+		if(this.canDispatch(operation)){
+			var request = Jet.IO.Requests.createRequest(operation, oncomplete);
+			this.__worker.postMessage(request);
+		}
+		else {
+			throw("Jet.IO.OperationController :: Operation not supported: " +operation.resource);
 		}
 	},
 	
-	/** @private */
 	/** @param {Jet.IO.OperationRequest} request */
+	/** @param {Function} oncomplete */
 	/** @returns {Void} */
-	_requestDispatch : function(request){				// This routes messages to other Operation Controllers
-		// Here we need to route each
+	requestDispatch : function(request, oncomplete){
+		if(Jet.IO.Requests.hasRequest(request)){
+			Jet.IO.Requests.endRequest(request);
+		}
+		else {
+			var newRequest = Jet.IO.Requests.appendRequest(request, oncomplete);
+			// Forward the request to another controller
+		}
 	},
 	
-	/** @param {Operation} op */
+	/** @param {Jet.IO.Operation} operation */
 	/** @returns {Boolean} */
-	canDispatch : function(op){
-		return (this.__operations[ op.resource ] != undefined);
+	canDispatch : function(operation){
+		return (this.__operations[ operation.resource ] != undefined);
+	},
+	
+	/** @param {MessageEvent} e */
+	/** @returns {Void} */
+	onmessage : function(e){
+		function oncomplete(request){
+			postMessage(request);
+		}
+		this.requestDispatch(e.data, oncomplete);
 	}
 }

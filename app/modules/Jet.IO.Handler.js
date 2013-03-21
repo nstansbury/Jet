@@ -47,9 +47,9 @@ Jet.IO.OperationHandler = {
 			var delegate = this.getOperation(operation);
 			
 			var operation = request.operations[0];
-			operation.oncomplete = function(operation){
+			operation.oncomplete = function(){
 				delete operation.oncomplete;				// Because it won't serialise across thread boundaries otherwise
-				request.operations = [operation];
+				request.operations = [operation];			
 				postMessage(request);
 			}
 			delegate.dispatch.call(operation);
@@ -62,8 +62,17 @@ Jet.IO.OperationHandler = {
 onmessage = function(e){
 	var operation = e.data;
 	
+	importScripts(operation.resource);
+		
+	for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
+		var symbol = EXPORTED_SYMBOLS[ i ];
+		var delegate = this[ symbol ];
+		delegate.register();
+		Jet.IO.OperationHandler.addOperation(delegate);
+	}
+		
 	// Register a GET operation for this handlers resource
-	getHandlerOperations.resource = op.resource;
+	getHandlerOperations.resource = operation.resource;
 	getHandlerOperations.register();
 	Jet.IO.OperationHandler.addOperation(getHandlerOperations);
 	
@@ -76,23 +85,14 @@ onmessage = function(e){
 }
 
 
-getHandlerOperations = {
+var getHandlerOperations = {
 	resource : "",
 	
 	action : Jet.IO.OperationActions.Get,
 	
 	dispatchType : Jet.IO.OperationDispatchTypes.Slave,
 	
-	register : function(){
-		importScripts(this.resource);
-		
-		for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
-			var symbol = EXPORTED_SYMBOLS[ i ];
-			var opDefinition = this[ symbol ];
-			opDefinition.register();
-			Jet.IO.OperationHandler.addOperation(opDefinition);
-		}
-	},
+	register : function(){},
 	
 	dispatch : function(){
 		// Return the list of operations this handler can dispatch
@@ -107,7 +107,7 @@ getHandlerOperations = {
 			opArray.push(op);
 		}
 		operation.object = opArray;
-		this.oncomplete(operation);
+		this.oncomplete();
 	}
 	
 }
