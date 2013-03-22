@@ -137,15 +137,16 @@ Jet.IO.Queue.prototype = {
 	},
 	
 	dequeue : function()	{
-		var head = this.head.next;
-		if(head)	{
-			[this.head, head] = [head, this.head];
-			return head.item;
+		if(this.head){
+			var head = this.head.next;
+			[this.head, head] = [head, this.head]
+			if(!this.head)	{
+				this.tail = null;
+			}
+			head.prev = head.next = null;
+			return head.item;	
 		}
-		else {
-			[this.tail, head] = [head, this.tail];
-		}
-		return head.item;
+		return null;
 	},
 	
 	peek : function(){
