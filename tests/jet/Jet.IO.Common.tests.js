@@ -3,7 +3,7 @@ describe("Jet.IO.Requests: ", function() {
 
 	function oncomplete(){};
 	
-	it("WHEN createRequest() is called THEN a new Jet.IO.OperationRequest is returned", function() {
+	it("WHEN createRequest() is called THEN a new Jet.IO.OperationRequest is created", function() {
 		
 		var operation = {
 			resource : "some://resource/url",
@@ -14,6 +14,7 @@ describe("Jet.IO.Requests: ", function() {
 		
 		runs(function(){
 			expect(request).toBeDefined();
+			expect(Jet.IO.Requests.hasRequest(request)).toEqual(true);
 		})
 		
 	});
