@@ -1,11 +1,11 @@
-var importedScripts = null;
-function importScripts(script){
-	importedScripts = script;
-};
 
-function postMessage(e){
-	
-}
+
+var importScriptsScript = null;
+function importScripts(script){importScriptsScript = script;}
+
+var postMessageData = null;
+function postMessage(data){postMessageData = data;}
+
 
 var EXPORTED_SYMBOLS = ["testOperation1", "testOperation2"];
 
