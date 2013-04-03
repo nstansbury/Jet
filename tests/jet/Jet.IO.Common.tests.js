@@ -1,81 +1,157 @@
+SCENARIO.Reporter = new SCENARIO.HTMLReporter();
 
-describe("Jet.IO.Requests: ", function() {
-
-	function oncomplete(){};
-	
-	it("WHEN createRequest() is called THEN a new Jet.IO.OperationRequest is created", function() {
-		
+SCENARIO.Criteria = {
+	"A Jet.IO.Requests" : function(){
+		return Jet.IO.Requests;
+	},
+	"createRequest() is called" : function(){
 		var operation = {
 			resource : "some://resource/url",
 			action : "SomeTestAction",
 			object : "SomeTestObject"
 		}
-		var request = Jet.IO.Requests.createRequest(operation, oncomplete);
-		
-		runs(function(){
-			expect(request).toBeDefined();
-			expect(Jet.IO.Requests.hasRequest(request)).toEqual(true);
-		})
-		
-	});
-});
+		function oncomplete(){};
+		return this.Given("A Jet.IO.Requests").createRequest(operation, oncomplete);
+	},
+	"a new Jet.IO.OperationRequest is created" : function(){
+		var request = this.The("createRequest() is called");
+		return this.Given("A Jet.IO.Requests").hasRequest(request);
+	}
+}
 
-describe("Jet.IO.Queue: ", function() {
-	
-	var Q = new Jet.IO.Queue();
-	
-	it("WHEN first item is queued THEN head and tail equal each other", function() {
+SCENARIO("Jet.IO.Requests.createRequest() should return a new Jet.IO.OperationRequest").
+	GIVEN("A Jet.IO.Requests").
+		WHEN("createRequest() is called").
+			THEN("a new Jet.IO.OperationRequest is created").
+END();
+
+
+
+SCENARIO.Criteria = {
+	"A Jet.IO.Queue" : function(){
+		return new Jet.IO.Queue();
+	},
+	"the first item is queued" : function(){
+		var item = 1;
+		this.Given("A Jet.IO.Queue").queue(item);
+		return item;
+	},
+	"head and tail should equal each other" : function(){
+		var Q = this.Given("A Jet.IO.Queue");
+		return Q.head == Q.tail;
+	},
+	"head.item should equal the new item" : function(){
+		var Q = this.Given("A Jet.IO.Queue");
+		return Q.head.item == this.The("the first item is queued");
+	}
+}
+
+SCENARIO("Jet.IO.Queue :: Given one item is queued, then the head & tail equal the same item").
+	GIVEN("A Jet.IO.Queue").
+		WHEN("the first item is queued").
+			THEN("head and tail should equal each other").
+				AND("head.item should equal the new item").
+END();
+
+
+SCENARIO.Criteria = {
+	"A Jet.IO.Queue" : function(){
+		return new Jet.IO.Queue();
+	},
+	"the first item is queued" : function(){
+		var item = 1;
+		this.Given("A Jet.IO.Queue").queue(item);
+		return item;
+	},
+	"a second item is queued" : function(){
+		var item = 2;
+		this.Given("A Jet.IO.Queue").queue(item);
+		return item;
+	},
+	"head and tail should not equal each other" : function(){
+		var Q = this.Given("A Jet.IO.Queue");
+		return Q.head != Q.tail;
+	},
+	"head.item should not equal the new item" : function(){
+		var Q = this.Given("A Jet.IO.Queue");
+		return Q.head.item != this.The("a second item is queued");
+	}
+}
+
+SCENARIO("Jet.IO.Queue :: Given two items are queued, then the head & tail do not equal the same item").
+	GIVEN("A Jet.IO.Queue").
+		AND("the first item is queued").
+			WHEN("a second item is queued").
+				THEN("head and tail should not equal each other").
+					AND("head.item should not equal the new item").
+END();
+
+
+SCENARIO.Criteria = {
+	"A Jet.IO.Queue" : function(){
+		return new Jet.IO.Queue();
+	},
+	"A next head" : function(){
+		var Q = this.Given("A Jet.IO.Queue");
 		
 		var item = 1;
 		Q.queue(item);
 		
-		runs(function(){
-			expect(Q.head).toEqual(Q.tail);
-			expect(Q.head.item).toEqual(item);
-			expect(Q.tail.item).toEqual(item);
-		});
-		
-	});
-	
-	it("WHEN second item is queued THEN head and tail do not equal each other", function() {
-		
-		var item = 2
+		var item = 2;
 		Q.queue(item);
 		
-		runs(function(){
-			expect(Q.head).not.toEqual(Q.tail);
-			expect(Q.head.item).not.toEqual(item);
-			expect(Q.tail.item).toEqual(item);
-		});
+		return Q.head.next;
+	},
+	"an item is dequeued" : function(){
+		var Q = this.Given("A Jet.IO.Queue");
+		return Q.dequeue();
+	},
+	"head should equal head.next" : function(){
+		var Q = this.Given("A Jet.IO.Queue");
+		var nextHead = this.Given("A next head");
+		return Q.head == nextHead;
+	}
+}
+
+SCENARIO("Jet.IO.Queue :: Given a queue with two items, after dequing one item, then the head should equal the next item").
+	GIVEN("A Jet.IO.Queue").
+		AND("A next head").
+			WHEN("an item is dequeued").
+				THEN("head should equal head.next").
+END();
+
+
+
+
+SCENARIO.Criteria = {
+	"A Jet.IO.Queue with multiple items" : function(){
+		var Q = new Jet.IO.Queue();
 		
-	});
-	
-	it("WHEN an item is dequeued THEN head should equal head.next", function() {
+		var item = 1;
+		Q.queue(item);
 		
-		var headItem = Q.head.item;
-		var nextHead = Q.head.next;
+		var item = 2;
+		Q.queue(item);
 		
-		var item = Q.dequeue();
-		
-		runs(function(){
-			expect(item).toEqual(headItem);
-			expect(Q.head).toEqual(nextHead);
-		});
-		
-	});
-	
-	it("WHEN the last item is dequeued THEN head should equal tail", function() {
+		return Q;
+	},
+	"the last item is dequeued" : function(){
+		var Q = this.Given("A Jet.IO.Queue with multiple items");
 		
 		var head = true;
 		while(head){
 			head = Q.dequeue();
 		}
-		
-		runs(function(){
-			expect(Q.head).toEqual(Q.tail);
-			
-		});
-		
-	});
-	
-});
+		return true;
+	},
+	"head should equal tail which is null" : function(){
+		var Q = this.Given("A Jet.IO.Queue with multiple items");
+		return (Q.head == Q.tail) && (Q.head == null);
+	}
+}
+
+SCENARIO("Jet.IO.Queue :: When the last item is dequeued, then the head and tail should equal null").
+	GIVEN("A Jet.IO.Queue with multiple items").
+		WHEN("the last item is dequeued").
+			THEN("head should equal tail which is null").
+END();

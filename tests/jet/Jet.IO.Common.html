@@ -4,24 +4,10 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>Jet.IO.Common</title>
-		<link rel="stylesheet" type="text/css" href="../../app/libraries/jasmine.css">
-		<script type="text/javascript" src="../../app/libraries/jasmine.js"></script>
-		<script type="text/javascript" src="../../app/libraries/jasmine-html.js"></script>
-		
+		<link rel="stylesheet" type="text/css" href="../../../Given.js/given.css">
+		<script type="text/javascript" src="../../../Given.js/given.js"></script>
 		<script type="text/javascript" src="../../app/modules/Jet.IO.Common.js"></script>
 		<script type="text/javascript" src="Jet.IO.Common.tests.js"></script>
-		<script type="text/javascript">
-			window.addEventListener("DOMContentLoaded", runTests, false);
-			
-			function runTests(){
-				var jasmineEnv = jasmine.getEnv();
-				jasmineEnv.updateInterval = 1000;
-				
-				var htmlReporter = new jasmine.HtmlReporter();
-				jasmineEnv.addReporter(htmlReporter);
-				jasmineEnv.execute();
-			}
-		</script>
 	</head>
 	<body></body>
 </html>
