@@ -429,7 +429,7 @@ BucketQueue.prototype = {
 			[this.head] = [head];
 		}
 		else {
-			[this.back] = [head];
+			[this.tail] = [head];
 		}
 		return head.item;
 	},
