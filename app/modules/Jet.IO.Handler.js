@@ -44,9 +44,9 @@ Jet.IO.OperationHandler = {
 		}
 		else { // This is a request that we dispatch this operation
 			// Get a Jet.IO.Operation delegate
+			var operation = request.operations[0];
 			var delegate = this.getOperation(operation);
 			
-			var operation = request.operations[0];
 			operation.oncomplete = function(){
 				delete operation.oncomplete;				// Because it won't serialise across thread boundaries otherwise
 				request.operations = [operation];			
@@ -61,26 +61,31 @@ Jet.IO.OperationHandler = {
 
 onmessage = function(e){
 	var operation = e.data;
-	
-	importScripts(operation.resource);
+	try {
+		importScripts(operation.resource);
 		
-	for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
-		var symbol = EXPORTED_SYMBOLS[ i ];
-		var delegate = this[ symbol ];
-		delegate.register();
-		Jet.IO.OperationHandler.addOperation(delegate);
-	}
+		for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
+			var symbol = EXPORTED_SYMBOLS[ i ];
+			var delegate = this[ symbol ];
+			delegate.register();
+			Jet.IO.OperationHandler.addOperation(delegate);
+		}
+			
+		// Register a GET operation for this handlers resource
+		getHandlerOperations.resource = operation.resource;
+		getHandlerOperations.register();
+		Jet.IO.OperationHandler.addOperation(getHandlerOperations);
 		
-	// Register a GET operation for this handlers resource
-	getHandlerOperations.resource = operation.resource;
-	getHandlerOperations.register();
-	Jet.IO.OperationHandler.addOperation(getHandlerOperations);
-	
-	onmessage = function(e){
-		Jet.IO.OperationHandler._requestDispatch(e.data);
+		onmessage = function(e){
+			Jet.IO.OperationHandler._requestDispatch(e.data);
+		}
+		
+		operation.status = 200;
+	}
+	catch(e){
+		operation.status = 500;
 	}
 	
-	operation.status = "200";
 	postMessage(operation);
 }
 

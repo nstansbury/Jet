@@ -104,13 +104,26 @@ Jet.IO.Requests = {
 	endRequest : function endRequest(request){
 		var envelope = this._requests[ request.id ];
 		delete this._requests[ request.id ];
-		if(request.original == null){
+		if(envelope.original == null){		// The original source request - not appended
 			envelope.oncomplete(envelope.operations);
 		}
 		else {
 			envelope.oncomplete.call(envelope.original, envelope.original);	
 		}
-	}
+	},
+	
+	/** @param {Jet.IO.OperationRequest} request */
+	/** @returns {Void} */
+	cancelRequest : function cancelRequest(request){
+		var envelope = this._requests[ request.id ];
+		delete this._requests[ request.id ];
+		if(request.original == null){
+			envelope.oncomplete(null);
+		}
+		else {
+			envelope.oncomplete.call(envelope.original, null);	
+		}
+	},
 }
 
 
