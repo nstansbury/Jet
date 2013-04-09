@@ -40,9 +40,9 @@ Jet.IO.Operation = {
 	/** @returns {Void} */
 	register : function register(){},
 	
-	/** @param {OperationRequest} */
+	/** @param {OperationRequest} request */
 	/** @returns {Void} */
-	dispatch : function dispatch(op){}
+	dispatch : function dispatch(request){}
 }
 
 Jet.IO.OperationRequest = {

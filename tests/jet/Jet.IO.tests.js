@@ -1,11 +1,6 @@
 
 
-var importScriptsScript = null;
-function importScripts(script){importScriptsScript = script;}
-
-var postMessageData = null;
-function postMessage(data){postMessageData = data;}
-
+var onmessage = function(){}
 
 var EXPORTED_SYMBOLS = ["testOperation1", "testOperation2"];
 

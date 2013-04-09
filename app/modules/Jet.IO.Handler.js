@@ -2,13 +2,15 @@
 
 importScripts("Jet.IO.Common.js");
 
+var global = this;
+
 Jet.IO.OperationHandler = {
 	
 	__requests : {},
 	
 	__operations : {},
 	
-	/** @returns {[Jet.IO.Operations]} */
+	/** @returns {[Jet.IO.Operation]} */
 	get operations(){
 		return this.__operations;
 	},
@@ -17,13 +19,16 @@ Jet.IO.OperationHandler = {
 	/** @param {Object} operation */
 	/** @returns {Jet.IO.Operation} */
 	getOperation : function(operation){
-		return this.__operations[ operation.resource ];
+		return this.__operations[operation.resource][operation.action];
 	},
 	
 	/** @param {Jet.IO.Operation} operation */
 	/** @returns {Void} */
 	addOperation : function(operation){
-		this.__operations[ operation.resource ] = operation;
+		if(this.__operations[operation.resource] == undefined){
+			this.__operations[operation.resource] = {}
+		}
+		this.__operations[operation.resource][operation.action] = operation;
 	},
 	
 	/** @param {Jet.IO.Operation} operation */
@@ -59,60 +64,86 @@ Jet.IO.OperationHandler = {
 	}
 }
 
-onmessage = function(e){
-	var operation = e.data;
-	try {
-		importScripts(operation.resource);
-		
-		for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
-			var symbol = EXPORTED_SYMBOLS[ i ];
-			var delegate = this[ symbol ];
-			delegate.register();
-			Jet.IO.OperationHandler.addOperation(delegate);
-		}
-			
-		// Register a GET operation for this handlers resource
-		getHandlerOperations.resource = operation.resource;
-		getHandlerOperations.register();
-		Jet.IO.OperationHandler.addOperation(getHandlerOperations);
-		
-		onmessage = function(e){
-			Jet.IO.OperationHandler._requestDispatch(e.data);
-		}
-		
-		operation.status = 200;
-	}
-	catch(e){
-		operation.status = 500;
-	}
-	
-	postMessage(operation);
-}
 
-
-var getHandlerOperations = {
-	resource : "",
+var putHandlerOperations = {
+	resource : "jet://io/operations",
 	
-	action : Jet.IO.OperationActions.Get,
+	action : Jet.IO.OperationActions.Put,
 	
 	dispatchType : Jet.IO.OperationDispatchTypes.Slave,
 	
 	register : function(){},
 	
 	dispatch : function(){
-		// Return the list of operations this handler can dispatch
-		var opArray = [];
-		var operations = Jet.IO.OperationHandler.operations;
-		for(var opDefinition in operations){
-			var op = {
-				resource : opDefinition.resource,
-				action : opDefinition.action,
-				object : opDefinition.dispatchType
+		try {
+			importScripts(this.object);
+			for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
+				var symbol = EXPORTED_SYMBOLS[i];
+				var delegate = global[symbol];
+				delegate.register();
+				Jet.IO.OperationHandler.addOperation(delegate);
 			}
-			opArray.push(op);
+				
+			// Register an GET operation for this handlers resource
+			getHandlerOperations.register();
+			Jet.IO.OperationHandler.addOperation(getHandlerOperations);
+			
+			this.status = 200;
 		}
-		operation.object = opArray;
+		catch(e){
+			this.status = 500;
+		}
+		finally {
+			this.oncomplete();	
+		}
+	}
+}
+
+
+var getHandlerOperations = {
+	resource : "jet://io/operations",
+	
+	action : Jet.IO.OperationActions.Get,
+	
+	dispatchType : Jet.IO.OperationDispatchTypes.Slave,
+	
+	register : function(){
+		this.object = [];
+		var operations = Jet.IO.OperationHandler.operations;
+		for(var definition in operations){
+			var op = {
+				resource : definition.resource,
+				action : definition.action,
+				object : definition.dispatchType
+			}
+			this.object.push(op);
+		}
+	},
+	
+	dispatch : function(){
+		// Return the list of operations this handler can dispatch
 		this.oncomplete();
 	}
 	
+}
+
+var deleteHandlerOperations = {
+	resource : "jet://io/operations",
+	
+	action : Jet.IO.OperationActions.Delete,
+	
+	dispatchType : Jet.IO.OperationDispatchTypes.Slave,
+	
+	register : function(){},
+	
+	dispatch : function(){
+		
+	}
+}
+
+Jet.IO.OperationHandler.addOperation(putHandlerOperations);
+Jet.IO.OperationHandler.addOperation(deleteHandlerOperations);
+
+onmessage = function(e){
+	Jet.IO.OperationHandler._requestDispatch(e.data);
 }
