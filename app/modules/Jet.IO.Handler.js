@@ -8,27 +8,44 @@ Jet.IO.OperationHandler = {
 	
 	__requests : {},
 	
-	__operations : {},
+	__operations : [],
 	
-	/** @returns {[Jet.IO.Operation]} */
+	__operationsTable : {},
+	
+	init : function(){
+		// We don't reset outstanding request responses
+		this.__operations = [];
+		this.__operationsTable = {};
+		
+		this.addOperation(putHandlerOperations);
+		this.addOperation(deleteHandlerOperations);
+
+		onmessage = function(e){
+			Jet.IO.OperationHandler._requestDispatch(e.data);
+		}
+	},
+	
+	/** @returns {Jet.IO.Iterator} */
 	get operations(){
-		return this.__operations;
+		return new Jet.IO.Iterator(this.__operations);
 	},
 	
 	
 	/** @param {Object} operation */
-	/** @returns {Jet.IO.Operation} */
+	/** @returns {Jet.IO.OperationDelegate} */
 	getOperation : function(operation){
-		return this.__operations[operation.resource][operation.action];
+		var index = this.__operationsTable[operation.resource][operation.action];
+		return this.__operations[index];
 	},
 	
-	/** @param {Jet.IO.Operation} operation */
+	/** @param {Jet.IO.OperationDelegate} operation */
 	/** @returns {Void} */
 	addOperation : function(operation){
-		if(this.__operations[operation.resource] == undefined){
-			this.__operations[operation.resource] = {}
+		if(this.__operationsTable[operation.resource] == undefined){
+			this.__operationsTable[operation.resource] = {}
 		}
-		this.__operations[operation.resource][operation.action] = operation;
+		this.__operations.push(operation);
+		this.__operationsTable[operation.resource][operation.action] = this.__operations.length -1;
 	},
 	
 	/** @param {Jet.IO.Operation} operation */
@@ -51,13 +68,19 @@ Jet.IO.OperationHandler = {
 			// Get a Jet.IO.Operation delegate
 			var operation = request.operations[0];
 			var delegate = this.getOperation(operation);
-			
-			operation.oncomplete = function(){
-				delete operation.oncomplete;				// Because it won't serialise across thread boundaries otherwise
-				request.operations = [operation];			
+			if(delegate){
+				operation.oncomplete = function(){
+					delete operation.oncomplete;				// Because it won't serialise across thread boundaries otherwise
+					operation.object = delegate.object;
+					request.operations = [operation];			
+					postMessage(request);
+				}
+				delegate.dispatch.call(operation);
+			}
+			else {
+				operation.status = 404;
 				postMessage(request);
 			}
-			delegate.dispatch.call(operation);
 		}
 		// We always free the handler after dispatch returns
 		postMessage(null);
@@ -66,6 +89,8 @@ Jet.IO.OperationHandler = {
 
 
 var putHandlerOperations = {
+	__proto__ : Jet.IO.OperationDelegate,
+	
 	resource : "jet://io/operations",
 	
 	action : Jet.IO.OperationActions.Put,
@@ -76,6 +101,7 @@ var putHandlerOperations = {
 	
 	dispatch : function(){
 		try {
+			Jet.IO.OperationHandler.init();
 			importScripts(this.object);
 			for(var i = 0; i < EXPORTED_SYMBOLS.length; i++){
 				var symbol = EXPORTED_SYMBOLS[i];
@@ -101,6 +127,8 @@ var putHandlerOperations = {
 
 
 var getHandlerOperations = {
+	__proto__ : Jet.IO.OperationDelegate,
+		
 	resource : "jet://io/operations",
 	
 	action : Jet.IO.OperationActions.Get,
@@ -110,11 +138,12 @@ var getHandlerOperations = {
 	register : function(){
 		this.object = [];
 		var operations = Jet.IO.OperationHandler.operations;
-		for(var definition in operations){
+		while(operations.hasMore()){
+			var operation = operations.getNext();
 			var op = {
-				resource : definition.resource,
-				action : definition.action,
-				object : definition.dispatchType
+				resource : operation.resource,
+				action : operation.action,
+				object : operation.dispatchType
 			}
 			this.object.push(op);
 		}
@@ -128,6 +157,8 @@ var getHandlerOperations = {
 }
 
 var deleteHandlerOperations = {
+	__proto__ : Jet.IO.OperationDelegate,
+	
 	resource : "jet://io/operations",
 	
 	action : Jet.IO.OperationActions.Delete,
@@ -141,9 +172,5 @@ var deleteHandlerOperations = {
 	}
 }
 
-Jet.IO.OperationHandler.addOperation(putHandlerOperations);
-Jet.IO.OperationHandler.addOperation(deleteHandlerOperations);
+Jet.IO.OperationHandler.init();
 
-onmessage = function(e){
-	Jet.IO.OperationHandler._requestDispatch(e.data);
-}

@@ -74,16 +74,17 @@ Jet.IO.OperationDispatcher = {
 	}
 }
 
+
+
 onmessage = function(e){
 	var request = e.data;
 	var operation = request.operations[0];
-	var count = operation.object;
 	// Create an OperationHandler for each slave thread
+	var count = operation.object;
 	for(var i = 0; i < count; i++){
 		Jet.IO.OperationDispatcher.createHandler(operation.resource);
 	}
-	//____DEBUGGER
-	postMessage(operation.resource);
+	postMessage(operation);
 	onmessage = function(e){Jet.IO.OperationDispatcher.onmessage(e)};
 }
 

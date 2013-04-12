@@ -11,11 +11,11 @@ SCENARIO.Criteria = {
 			object : "SomeTestObject"
 		}
 		function oncomplete(){};
-		return scenario.Given("A Jet.IO.Requests").createRequest(operation, oncomplete);
+		return scenario.Get("A Jet.IO.Requests").createRequest(operation, oncomplete);
 	},
 	"a new Jet.IO.OperationRequest is created" : function(scenario){
-		var request = scenario.The("createRequest() is called");
-		return scenario.Given("A Jet.IO.Requests").hasRequest(request);
+		var request = scenario.Get("createRequest() is called");
+		return scenario.Get("A Jet.IO.Requests").hasRequest(request);
 	}
 }
 
@@ -28,21 +28,21 @@ END();
 
 
 SCENARIO.Criteria = {
-	"A Jet.IO.Queue" : function(){
+	"A Jet.IO.Queue" : function(scenario){
 		return new Jet.IO.Queue();
 	},
 	"the first item is queued" : function(scenario){
 		var item = 1;
-		scenario.Given("A Jet.IO.Queue").queue(item);
+		scenario.Get("A Jet.IO.Queue").queue(item);
 		return item;
 	},
 	"head and tail should equal each other" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue");
+		var Q = scenario.Get("A Jet.IO.Queue");
 		return Q.head == Q.tail;
 	},
 	"head.item should equal the new item" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue");
-		return Q.head.item == scenario.The("the first item is queued");
+		var Q = scenario.Get("A Jet.IO.Queue");
+		return Q.head.item == scenario.Get("the first item is queued");
 	}
 }
 
@@ -60,21 +60,21 @@ SCENARIO.Criteria = {
 	},
 	"the first item is queued" : function(scenario){
 		var item = 1;
-		scenario.Given("A Jet.IO.Queue").queue(item);
+		scenario.Get("A Jet.IO.Queue").queue(item);
 		return item;
 	},
 	"a second item is queued" : function(scenario){
 		var item = 2;
-		scenario.Given("A Jet.IO.Queue").queue(item);
+		scenario.Get("A Jet.IO.Queue").queue(item);
 		return item;
 	},
 	"head and tail should not equal each other" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue");
+		var Q = scenario.Get("A Jet.IO.Queue");
 		return Q.head != Q.tail;
 	},
 	"head.item should not equal the new item" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue");
-		return Q.head.item != scenario.The("a second item is queued");
+		var Q = scenario.Get("A Jet.IO.Queue");
+		return Q.head.item != scenario.Get("a second item is queued");
 	}
 }
 
@@ -92,7 +92,7 @@ SCENARIO.Criteria = {
 		return new Jet.IO.Queue();
 	},
 	"A next head" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue");
+		var Q = scenario.Get("A Jet.IO.Queue");
 		
 		var item = 1;
 		Q.queue(item);
@@ -103,12 +103,12 @@ SCENARIO.Criteria = {
 		return Q.head.next;
 	},
 	"an item is dequeued" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue");
+		var Q = scenario.Get("A Jet.IO.Queue");
 		return Q.dequeue();
 	},
 	"head should equal head.next" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue");
-		var nextHead = scenario.Given("A next head");
+		var Q = scenario.Get("A Jet.IO.Queue");
+		var nextHead = scenario.Get("A next head");
 		return Q.head == nextHead;
 	}
 }
@@ -136,7 +136,7 @@ SCENARIO.Criteria = {
 		return Q;
 	},
 	"the last item is dequeued" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue with multiple items");
+		var Q = scenario.Get("A Jet.IO.Queue with multiple items");
 		
 		var head = true;
 		while(head){
@@ -145,7 +145,7 @@ SCENARIO.Criteria = {
 		return true;
 	},
 	"head should equal tail which is null" : function(scenario){
-		var Q = scenario.Given("A Jet.IO.Queue with multiple items");
+		var Q = scenario.Get("A Jet.IO.Queue with multiple items");
 		return (Q.head == Q.tail) && (Q.head == null);
 	}
 }

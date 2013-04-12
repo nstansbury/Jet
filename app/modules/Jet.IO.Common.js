@@ -24,7 +24,14 @@ Jet.IO.OperationActions = {
 }
 
 
-Jet.IO.Operation = {
+/** @param {String} resource */
+/** @param {Jet.IO.OperationActions} [action] */
+/** @constructor */
+Jet.IO.Operation = function Operation(resource, action){
+	this.resource = resource;
+	this.action = action || Jet.IO.OperationActions.Get;
+}
+Jet.IO.Operation.prototype = {
 	/** @type {String} */
 	resource : "",
 	
@@ -36,6 +43,13 @@ Jet.IO.Operation = {
 
 	/** @type {Number} */
 	status : 0,
+}
+
+Jet.IO.OperationDelegate = {
+	__proto__ : Jet.IO.Operation.prototype,
+	
+	/** @type {Jet.IO.OperationDispatchTypes} */
+	dispatchType : Jet.IO.OperationDispatchTypes.Slave,
 	
 	/** @returns {Void} */
 	register : function register(){},
@@ -44,6 +58,7 @@ Jet.IO.Operation = {
 	/** @returns {Void} */
 	dispatch : function dispatch(request){}
 }
+
 
 Jet.IO.OperationRequest = {
 	
@@ -127,6 +142,7 @@ Jet.IO.Requests = {
 }
 
 
+/** @constructor */
 Jet.IO.Queue = function Queue()	{
 	this.clear();
 }
@@ -169,4 +185,17 @@ Jet.IO.Queue.prototype = {
 	clear : function()	{
 		this.head = this.tail = null;
 	}
+}
+
+/** @param {Array} array */
+/** @constructor */
+Jet.IO.Iterator = function Iterator(array){
+	this.__array = array || [];
+    this.__index = 0;
+}
+Jet.IO.Iterator.prototype = {
+	/** @returns {Boolean} */
+    hasMore: function() { return this.__index < this.__array.length; },
+	/** @returns {Object} */
+    getNext: function () { return ( this.__index < this.__array.length ) ? this.__array[this.__index++] : null; }
 }
