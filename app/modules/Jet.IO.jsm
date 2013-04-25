@@ -8,12 +8,12 @@ Components.utils.import("resource://jet/base.jsm");
 LoadScript("resource://jet/Jet.IO.Common.js", this);
 Service
 	Master
-		OperationController
+		Controller
 			Worker
-				OperationDispatcher
-				OperationHandler
+				Dispatcher
+				RequestHandler
 					Slave
-						OperationHandler Delegate
+						OperationHandler
 						Operation
 */
 
@@ -33,8 +33,8 @@ function OperationController(file){
 	}
 	controller.__operations[ file ] = getOperations;
 	
-	function oncomplete(operations){
-		console.log(operations);
+	function oncomplete(operation){
+		console.log(operation);
 	}
 	this.dispatchOperation(getOperations, oncomplete)
 	

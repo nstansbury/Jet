@@ -1,4 +1,3 @@
-SCENARIO.Reporter = new SCENARIO.HTMLReporter();
 
 SCENARIO.Criteria = {
 	"A Jet.IO.Requests" : function(){

@@ -2,7 +2,7 @@
 
 importScripts("Jet.IO.Common.js");
 
-Jet.IO.OperationDispatcher = {
+Jet.IO.Dispatcher = {
 	
 	/** @type {Jet.IO.Queue} */
 	workToDo : new Jet.IO.Queue(),
@@ -10,23 +10,21 @@ Jet.IO.OperationDispatcher = {
 	/** @type {Jet.IO.Queue} */
 	handlers : new Jet.IO.Queue(),
 	
-	/** @type {Object} */
-	requests : {},
-	
 	/** @param {String} file */
-	/** @returns {Void} */
+	/** @returns {Jet.IO.RequestHandler} */
 	createHandler : function(file){
 		var dispatcher = this;
-		var handler = new Jet.IO.OperationHandler(file);
+		var handler = new Jet.IO.RequestHandler(file);
 		handler.onready = function(){
 			// When a Handler becomes ready give it some work or re-queue it
 			if(dispatcher.workToDo.peek()){
-				handler.dispatchOperation(dispatcher.workToDo.dequeue());
+				handler.dispatchRequest(dispatcher.workToDo.dequeue());
 			}
 			else {
-				Jet.IO.OperationDispatcher.handlers.queue(handler);	
+				Jet.IO.Dispatcher.handlers.queue(handler);	
 			}
 		}
+		return handler;
 	},
 	
 	/** @param {Jet.IO.OperationRequest} request */
@@ -41,16 +39,23 @@ Jet.IO.OperationDispatcher = {
 	},
 	
 	/** @param {Jet.IO.OperationRequest} request */
-	/** @param {Function} oncomplete */
 	/** @returns {Void} */
-	requestDispatch : function(request, oncomplete){
+	requestDispatch : function(request){
+		function oncomplete(request){
+			postMessage(request);
+		}
 		if(Jet.IO.Requests.hasRequest(request)){
 			Jet.IO.Requests.endRequest(request);
 		}
 		else {
 			var newRequest = Jet.IO.Requests.appendRequest(request, oncomplete);
-			if(this.canDispatch(newRequest.operations[0])){
+			var type = Jet.IO.Operations.dispatchType(request.operation);
+			
+			if(type == Jet.IO.OperationDispatchTypes.Slave){
 				this.dispatchRequest(newRequest);
+			}
+			else if(type == Jet.IO.OperationDispatchTypes.Worker){
+				
 			}
 			else {
 				postMessage(newRequest);
@@ -58,39 +63,73 @@ Jet.IO.OperationDispatcher = {
 		}
 	},
 	
-	/** @param {Operation} op */
+	/** @param {Jet.IO.OperationRequest} request */
 	/** @returns {Boolean} */
-	canDispatch : function(op){
-		return false;
+	canDispatch : function(request){		
+		var delegate = Jet.IO.Operations.get(request.operation);
+		if(!delegate || delegate.dispatchType == Jet.IO.OperationDispatchTypes.Master){
+			return false;
+		}
+		return true;
 	},
 	
-	/** @param {MessageEvent} e */
 	/** @returns {Void} */
-	onmessage : function(e){
-		function oncomplete(request){
-			postMessage(request);
+	init : function(){
+		Jet.IO.Operations.clear();
+		Jet.IO.Operations.add(putHandlerOperations);
+		
+		onmessage = function(e){
+			Jet.IO.Dispatcher.requestDispatch(e.data);
 		}
-		this.requestDispatch(e.data, oncomplete);
 	}
 }
 
+Jet.IO.Dispatcher.init();
 
 
-onmessage = function(e){
-	var request = e.data;
-	var operation = request.operations[0];
-	// Create an OperationHandler for each slave thread
-	var count = operation.object;
-	for(var i = 0; i < count; i++){
-		Jet.IO.OperationDispatcher.createHandler(operation.resource);
+
+var putHandlerOperations = {
+	__proto__ : Jet.IO.OperationDelegate,
+	
+	resource : "jet://io/operations",
+	
+	action : Jet.IO.OperationActions.Put,
+	
+	dispatchType : Jet.IO.OperationDispatchTypes.Worker,
+	
+	register : function(){},
+	
+	dispatch : function(){
+		Jet.IO.OperationHandler.init();
+		
+		var count = this.object.numHandlers;
+		var file = this.object.script;
+		for(var i = 0; i < count; i++){
+			var handler = Jet.IO.Dispatcher.createHandler(file);
+		}
+		this.oncomplete();
 	}
-	postMessage(operation);
-	onmessage = function(e){Jet.IO.OperationDispatcher.onmessage(e)};
 }
+
+var getHandlerOperations = {
+	__proto__ : Jet.IO.OperationDelegate,
+		
+	resource : "jet://io/operations",
+	
+	action : Jet.IO.OperationActions.Get,
+	
+	dispatchType : Jet.IO.OperationDispatchTypes.Slave,
+	
+	register : function(){},
+	
+	dispatch : function(){}
+	
+}
+
 
 /** @param {String} file */
 /** @constructor */
-Jet.IO.OperationHandler = function OperationHandler(file){
+Jet.IO.RequestHandler = function RequestHandler(file){
 	var handler = this;
 	this.__worker = new Worker("../../app/modules/Jet.IO.Handler.js");
 	
@@ -115,7 +154,7 @@ Jet.IO.OperationHandler = function OperationHandler(file){
 	// Handler isn't ready yet so we post into it directly
 	this.__worker.postMessage(op);
 }
-Jet.IO.OperationHandler.prototype = {
+Jet.IO.RequestHandler.prototype = {
 	__worker : null,
 	
 	__isReady : false,
@@ -143,7 +182,7 @@ Jet.IO.OperationHandler.prototype = {
 	
 	/** @param {Jet.IO.OperationRequest} request */
 	/** @returns {Void} */
-	dispatchRequest : function(request){		// This dispatches Operation requests into the delegate Operation Handler
+	dispatchRequest : function(request){		// This dispatches Operation requests into the Operation Handler
 		if(this.isReady()){
 			this.isReady = false;
 			this.__worker.postMessage(request);	
@@ -170,7 +209,7 @@ Jet.IO.OperationHandler.prototype = {
 		function oncomplete(request){
 			handler.dispatchRequest(request);
 		}
-		Jet.IO.OperationDispatcher.requestDispatch(request, oncomplete)
+		Jet.IO.Dispatcher.requestDispatch(request, oncomplete)
 	},
 	
 	/** @param {MessageEvent} e */

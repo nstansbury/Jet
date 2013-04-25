@@ -25,7 +25,7 @@ Jet.IO.OperationActions = {
 
 
 /** @param {String} resource */
-/** @param {Jet.IO.OperationActions} [action] */
+/** @param {Jet.IO.OperationActions} action */
 /** @constructor */
 Jet.IO.Operation = function Operation(resource, action){
 	this.resource = resource;
@@ -60,34 +60,84 @@ Jet.IO.OperationDelegate = {
 }
 
 
-Jet.IO.OperationRequest = {
+Jet.IO.Operations = {
+	__stack : [],
+	__table : {},
+	
+	/** @param {Jet.IO.Operation} operation */
+	/** @returns {Jet.IO.Operation} */
+	get: function get(operation){
+		return this.__table[operation.resource][operation.action];
+	},
+	
+	/** @param {Jet.IO.Operation} operation */
+	/** @returns {Void} */
+	add: function add(operation){
+		if(this.__table[operation.resource] == undefined){
+			this.__table[operation.resource] = {};
+		}
+		this.__stack.push(operation);
+		this.__table[operation.resource][operation.action] = operation;
+	},
+	
+	/** @param {Jet.IO.Operation} operation */
+	/** @returns {Void} */
+	remove: function(operation){
+		var index = this.__table[operation.resource][operation.action];
+		if(index){		
+			for(var i = 0; i < this.__stack.length; i++){
+				var op = this.__stack[i];
+				if(op.resource == operation.resource && op.action == operation.action){
+					this.__stack.splice(i, 1);
+					delete this.__table[operation.resource][operation.action];
+					return;
+				}
+			}
+		}
+	},
+	
+	/** @returns {Void} */
+	clear: function(){
+		this.__table = {};
+		this.__stack = [];
+	},
+	
+	/** @returns {Jet.IO.Enumerator} */
+	getEnumerator : function(){
+		return new Jet.IO.Enumerator(this.__stack);
+	}
+}
+
+Jet.IO.OperationRequest = function OperationRequest(operation){
+	return {
+		id : Jet.IO.OperationRequest.uniqueId++,
+		operation : operation
+	}
+}
+Jet.IO.OperationRequest.uniqueId = Date.now(),	// Saves us Date.now()ing for every new request
+
+Jet.IO.OperationRequest.prototype = {
 	
 	/** @type {Number} */
 	id : 0,
 	
-	/** @type {[Jet.IO.Operation]} */
-	operations : []
+	/** @type {Jet.IO.Operation} */
+	operation : null
 }
 
 
 Jet.IO.Requests = {
-	_requestid : Date.now(),	// Saves us Date.now()ing for every request
 	
 	_requests : {},
 	
-	/** @param {Jet.IO.Operation} [operations] */
+	/** @param {Jet.IO.Operation} operation */
 	/** @param {Function} oncomplete */
 	/** @returns {Jet.IO.OperationRequest} */
-	createRequest : function newRequest(operations, oncomplete){
-		operations = Array.isArray(operations) ? operations : [operations];
-		var request = {
-			id : this._requestid++,
-			operations : operations
-		}
-		
+	createRequest : function newRequest(operation, oncomplete){
+		var request = new Jet.IO.OperationRequest(operation);
 		this._requests[ request.id ] = {
 			original : null,
-			operations : operations,
+			operation : operation,
 			oncomplete : oncomplete
 		}
 		return request;
@@ -96,11 +146,8 @@ Jet.IO.Requests = {
 	/** @param {Jet.IO.OperationRequest} request */
 	/** @param {Function} oncomplete */
 	/** @returns {Jet.IO.OperationRequest} */
-	appendRequest : function createRequest(request, oncomplete){
-		var newRequest = {
-			id : this._requestid++,
-			operations : request.operations
-		}
+	appendRequest : function appendRequest(request, oncomplete){
+		var newRequest = new Jet.IO.OperationRequest(request.operation);
 		this._requests[ newRequest.id ] = {
 			original : request,
 			oncomplete : oncomplete
@@ -120,7 +167,7 @@ Jet.IO.Requests = {
 		var envelope = this._requests[ request.id ];
 		delete this._requests[ request.id ];
 		if(envelope.original == null){		// The original source request - not appended
-			envelope.oncomplete(envelope.operations);
+			envelope.oncomplete(envelope.operation);
 		}
 		else {
 			envelope.oncomplete.call(envelope.original, envelope.original);	
@@ -187,13 +234,15 @@ Jet.IO.Queue.prototype = {
 	}
 }
 
-/** @param {Array} array */
+/** @param {Array|Object} enumerable */
 /** @constructor */
-Jet.IO.Iterator = function Iterator(array){
-	this.__array = array || [];
+Jet.IO.Enumerator = function Enumerator(enumerable){
+	this.__array = enumerable || [];
     this.__index = 0;
 }
-Jet.IO.Iterator.prototype = {
+Jet.IO.Enumerator.prototype = {
+	/** @returns {Boolean} */
+	isEmpty: function(){ return (this.__array.length > 0) ? true : false; },
 	/** @returns {Boolean} */
     hasMore: function() { return this.__index < this.__array.length; },
 	/** @returns {Object} */

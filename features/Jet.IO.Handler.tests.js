@@ -8,20 +8,14 @@ SCENARIO.Criteria = {
 		var putHandlerOperations = new Jet.IO.Operation("jet://io/operations", Jet.IO.OperationActions.Put);
 		putHandlerOperations.object = "file.js";
 		
-		var request = {
-			operations : [putHandlerOperations]
-		}
-		return request;
+		return new Jet.IO.OperationRequest(putHandlerOperations);
 	},
 	
 	"a getHandlerOperations request" : function(){
 		var getHandlerOperations = new Jet.IO.Operation("jet://io/operations", Jet.IO.OperationActions.Get);
 		getHandlerOperations.object = "file.js";
 		
-		var request = {
-			operations : [getHandlerOperations]
-		}
-		return request;
+		return new Jet.IO.OperationRequest(getHandlerOperations);
 	},
 	
 	"an invalid putHandlerOperations is sent" : function(scenario){
@@ -61,17 +55,17 @@ SCENARIO.Criteria = {
 	},
 	
 	"it has a status of 200" : function(scenario){
-		var operation = scenario.Get("a response is received").operations[0];
+		var operation = scenario.Get("a response is received").operation;
 		return operation.status == 200;
 	},
 	
 	"it has a status of 500" : function(scenario){
-		var operation = scenario.Get("a response is received").operations[0];
+		var operation = scenario.Get("a response is received").operation;
 		return operation.status == 500;
 	},
 	
 	"it returns its operations" : function(scenario){
-		var operation = scenario.Get("a response is received").operations[0];
+		var operation = scenario.Get("a response is received").operation;
 		return Array.isArray(operation.object) && operation.object.length > 2;
 	}
 }
@@ -101,4 +95,8 @@ SCENARIO("When a Jet.IO.OperationHandler is initialised it can return its list o
 			WHEN("a getHandlerOperations is sent").
 				AND("a response is received").
 					THEN("it returns its operations").
+END();
+
+
+SCENARIO("When a Jet.IO.OperationHandler dispatches a command to another handler, it receives a response back and execute its callbacks").
 END();

@@ -4,48 +4,20 @@ importScripts("Jet.IO.Common.js");
 
 var global = this;
 
+
 Jet.IO.OperationHandler = {
 	
-	__requests : {},
-	
-	__operations : [],
-	
-	__operationsTable : {},
-	
-	init : function(){
-		// We don't reset outstanding request responses
-		this.__operations = [];
-		this.__operationsTable = {};
-		
-		this.addOperation(putHandlerOperations);
-		this.addOperation(deleteHandlerOperations);
-
-		onmessage = function(e){
-			Jet.IO.OperationHandler._requestDispatch(e.data);
-		}
-	},
-	
-	/** @returns {Jet.IO.Iterator} */
-	get operations(){
-		return new Jet.IO.Iterator(this.__operations);
-	},
-	
-	
-	/** @param {Object} operation */
-	/** @returns {Jet.IO.OperationDelegate} */
-	getOperation : function(operation){
-		var index = this.__operationsTable[operation.resource][operation.action];
-		return this.__operations[index];
-	},
-	
-	/** @param {Jet.IO.OperationDelegate} operation */
 	/** @returns {Void} */
-	addOperation : function(operation){
-		if(this.__operationsTable[operation.resource] == undefined){
-			this.__operationsTable[operation.resource] = {}
+	init : function(){
+		Jet.IO.Operations.clear();
+		Jet.IO.Operations.add(putHandlerOperations);
+		Jet.IO.Operations.add(deleteHandlerOperations);
+		Jet.IO.Operations.add(getHandlerOperations);
+		
+		onmessage = function(e){
+			Jet.IO.OperationHandler.requestDispatch(e.data);
 		}
-		this.__operations.push(operation);
-		this.__operationsTable[operation.resource][operation.action] = this.__operations.length -1;
+		
 	},
 	
 	/** @param {Jet.IO.Operation} operation */
@@ -60,19 +32,20 @@ Jet.IO.OperationHandler = {
 	/** @private */
 	/** @param {Jet.IO.OperationRequest} request */
 	/** @returns {Void} */
-	_requestDispatch : function(request){
+	requestDispatch : function(request){
 		if(Jet.IO.Requests.hasRequest(request)){
 			Jet.IO.Requests.endRequest(request);
 		}
-		else { // This is a request that we dispatch this operation
-			// Get a Jet.IO.Operation delegate
-			var operation = request.operations[0];
-			var delegate = this.getOperation(operation);
+		else {
+			// This is a request that we dispatch this operation
+			// Get a Jet.IO.OperationDelegate
+			var operation = request.operation;
+			var delegate = Jet.IO.Operations.get(operation);
 			if(delegate){
 				operation.oncomplete = function(){
 					delete operation.oncomplete;				// Because it won't serialise across thread boundaries otherwise
 					operation.object = delegate.object;
-					request.operations = [operation];			
+					request.operation = operation;			
 					postMessage(request);
 				}
 				delegate.dispatch.call(operation);
@@ -107,12 +80,11 @@ var putHandlerOperations = {
 				var symbol = EXPORTED_SYMBOLS[i];
 				var delegate = global[symbol];
 				delegate.register();
-				Jet.IO.OperationHandler.addOperation(delegate);
+				Jet.IO.Operations.add(delegate);
 			}
 				
-			// Register an GET operation for this handlers resource
+			// Register the GET operation for this handlers resource
 			getHandlerOperations.register();
-			Jet.IO.OperationHandler.addOperation(getHandlerOperations);
 			
 			this.status = 200;
 		}
@@ -137,7 +109,7 @@ var getHandlerOperations = {
 	
 	register : function(){
 		this.object = [];
-		var operations = Jet.IO.OperationHandler.operations;
+		var operations = Jet.IO.Operations.getEnumerator();
 		while(operations.hasMore()){
 			var operation = operations.getNext();
 			var op = {
