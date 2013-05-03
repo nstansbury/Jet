@@ -1,5 +1,5 @@
 // General Startup
-pref("toolkit.defaultChromeURI", "chrome://jet/content/startup.xul");
+pref("toolkit.defaultChromeURI", "");
 pref("toolkit.defaultChromeFeatures", "chrome,modal=yes,resizable=no,dialog=no,titlebar=yes,centerscreen");
 
 // Debugging

@@ -1,11 +1,6 @@
-content jet file:chrome/content/
-skin jet default file:chrome/skin/
-content branding file:chrome/branding/
-
-content res file:res/
-
-locale jet en-US file:chrome/locale/en-US/
-locale jet en-GB file:chrome/locale/en-GB/
-locale branding en-US file:chrome/locale/branding/
+component {6e9620f8-a65e-4dc0-b26f-0812b8b62c7b} components/loader.js
+contract @jetjs.io/loader;1 {6e9620f8-a65e-4dc0-b26f-0812b8b62c7b}
+category command-line-handler m-jetloader @jetjs.io/loader;1
 
 resource Jet file:modules/
+resource Lib file:libraries/

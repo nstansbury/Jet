@@ -1,31 +1,55 @@
-let EXPORTED_SYMBOLS = ["Jet", "RegisterNS", "RegisterAlias", "ImportNS", "UnloadNS", "LoadScript", "ReadFile", "WriteFile", "GetFile", "Trace", "TryCatch", "Mozilla"];
+"use strict";
 
-/**	RegisterNS() expect to be able to register a resource://alias/module path and import loader.jsm to initialise the Namespace
-		ImportNS() will then be able to import modules registered in those namespaces
-*/
+let EXPORTED_SYMBOLS = ["Jet", "RegisterNS", "ImportNS", "UnloadNS", "RegisterAlias", "Trace", "Mozilla"];
 
+// RegisterNS() expects to be able to register a resource://alias/module path and import loader.jsm to initialise the Namespace
+// ImportNS() will then be able to import modules registered in those namespaces
 
+var global = this;
 
-Jet = {
+var Jet = {
 	version: 0.1,
 	
-	__scope : null,
-	
-	/** @param {Object} scope */
+	/** @param {Object} params */
 	/** @returns {Void} */
-	Start : function(scope)	{
-		Trace("________Jet Server v"+this.version +"________");
+	start : function(params)	{
+		Trace("________ Jet Server v"+this.version +" ________");
 		
-		Jet.__scope = scope;
-		RegisterAlias("Lib", GetFile("app/libraries"));
-		RegisterAlias("Res", GetFile("app/res"));
-		RegisterAlias("Tests", GetFile("tests"));
+		try{
+			ImportNS("Jet.Net");
+			ImportNS("Jet.IO");
+			
+			var httpService = new Jet.Net.HttpService();
+			
+			var file = Jet.IO.File.open("app/resources");
+			httpService.registerDirectory("/jet/", file);
+			
+			httpService.start(params.port);
+			Trace("# Listening on: " +params.port);
 		
-		Trace.enabled = true;
-		
-		ImportNS("Jet");
-		Jet.App.start();
-	}
+			var nsThreadManager = Mozilla.Components.Service("@mozilla.org/thread-manager;1", "nsIThreadManager");
+			var mainThread = nsThreadManager.currentThread;
+			
+			Trace("# Jet is running.... <Ctrl+C> to Exit");
+			
+			while(!this.__isStopping)		{
+				mainThread.processNextEvent(true);
+			}
+			while(mainThread.hasPendingEvents())		{
+				mainThread.processNextEvent(true);
+			}
+		}
+		catch(e){
+			Trace(e)
+		}
+	},
+	
+	__isStopping : false,
+	
+	stop : function stop(){
+		this.__isStopping = true;
+	},
+	
 };
 
 
@@ -38,8 +62,8 @@ function ImportNS(namespace, scope, relative)		{
 		Trace("# Importing Namespace :: "+namespace);
 		var path = namespace.split(".");									//** Expecting format:  x.y.z
 		
-		if(relative != true)	{													//** Ensure the full namespace object hierachy exists
-			scope = (scope == undefined) ? Jet.__scope : scope;
+		if(relative != true)	{											//** Ensure the full namespace object hierachy exists
+			scope = (scope == undefined) ? global : scope;
 			var len = path.length;
 			for(var i = 0; i < len; i++)	{
 				var name = path[ i ];
@@ -49,6 +73,7 @@ function ImportNS(namespace, scope, relative)		{
 				scope = scope[ name ];
 			}
 		}
+		
 		//	else We import the namespace exports directly into the scope argument
 		var resource = "resource://" + path[ 0 ] +"/" +namespace +".jsm";
 		Components.utils.import(resource, scope);
@@ -178,101 +203,7 @@ function Trace(thing, all)	{
 }
 
 
-/** @param {String} path */
-/** @param {Object} [scope] */
-/** @returns {Void} */
-function LoadScript(path, scope)	{
-	if(!scope)	{
-		throw new Components.Exception("No scope argument supplied to LoadScript() :: " +path, null, Components.stack.caller);
-	}
-	var loader = Mozilla.Components.Service("@mozilla.org/moz/jssubscript-loader;1", "mozIJSSubScriptLoader");  
-	loader.loadSubScript(path, scope);
-}
-
-
-
-
-/** @param {String} path */
-/** @param {Function} callback */
-/** @returns {Void} */
-function ReadFile(path, callback)	{
-	Components.utils.import("resource://gre/modules/NetUtil.jsm");
-	
-	function onDataAvailable(inputStream, result)	{
-		var data = null;
-		if(Components.isSuccessCode(result)) {
-			data = NetUtil.readInputStreamToString(inputStream, inputStream.available());
-		}
-		callback(result, data);
-	}
-	
-	NetUtil.asyncFetch(path, onDataAvailable);
-}
-
-
-/** @param {String} data */
-/** @param {String} path Native path to file*/
-/** @param {Function} [callback] */
-/** @returns {Void} */
-function WriteFile(data, path, callback)	{
-	Components.utils.import("resource://gre/modules/NetUtil.jsm");  
-	Components.utils.import("resource://gre/modules/FileUtils.jsm");  
-	
-	var converter = Mozilla.Components.Instance("@mozilla.org/intl/scriptableunicodeconverter", "nsIScriptableUnicodeConverter");  
-	converter.charset = "UTF-8";  
-	var inputStream = converter.convertToInputStream(data);  
-	
-	var file = new FileUtils.File(path);
-	
-	var outputStream = FileUtils.openSafeFileOutputStream(file);
-	NetUtil.asyncCopy(inputStream, outputStream, callback);
-}
-
-
-/** @param {String} path Relative path to app root*/
-/** @returns {nsIFile} */
-function GetFile(path)	{
-	var dirService = Mozilla.Components.Service("@mozilla.org/file/directory_service;1", "nsIProperties");
-	var file = dirService.get("CurProcD", Components.interfaces.nsIFile);
-	file = file.parent;	// Jet root
-	
-	var paths = path.split("/");
-	for(var i = 0; i < paths.length; i++)	{
-		file.append(paths[ i ]);
-	}
-	return file;
-}
-
-
-/** @param {Object} [thisArg] */
-/** @param {Function|String} func Method to try */
-/** @param {Array} [argsArray] */
-/** @param {Function} [onerror] */
-/** @returns {Boolean} */
-function TryCatch(thisArg, func, argsArray, onerror)	{
-	try {
-		if(typeof(thisArg) == "function"){	// No this arg
-			argsArray = func;
-			func = thisArg;
-			func.apply(null, argsArray);
-		}
-		else if(typeof(func) == "string"){
-			thisArg[ func ].apply(thisArg, argsArray);
-		}
-	}
-	catch(e) {
-		if(onerror){
-			onerror(e);
-		}
-		else {
-			Trace(e);
-		}
-		return false
-	}
-	return true;
-}
-
-Mozilla = {
+var Mozilla = {
 	Components : {
 
 		Instance : function Instance( contractID, interfaceName, initializer )	{
@@ -317,7 +248,6 @@ Mozilla = {
 			if( interfaces == undefined )	{
 				interfaces = [];
 			}
-			//interfaces.push( "xuluSystemObject" );
 			interfaces.push( "nsISupports" );
 			this.__interfaces = interfaces;
 		},

@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<!DOCTYPE window SYSTEM "../locale/toolbars.dtd">
-
-<?xul-overlay href="buttons.xul"?>
-
-<overlay id="toolbarsOverlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-
-</overlay>

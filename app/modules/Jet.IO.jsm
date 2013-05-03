@@ -1,86 +1,57 @@
 "use strict";
 
-/*
-let EXPORTED_SYMBOLS = ["OperationController"];
+let EXPORTED_SYMBOLS = ["File"];
 
-Components.utils.import("resource://jet/base.jsm");
+Components.utils.import("resource://Jet/Core.jsm");
 
-LoadScript("resource://jet/Jet.IO.Common.js", this);
-Service
-	Master
-		Controller
-			Worker
-				Dispatcher
-				RequestHandler
-					Slave
-						OperationHandler
-						Operation
-*/
+var File = {
+	
+	/** @param {String} path Relative path to app root*/
+	/** @returns {nsIFile} */
+	open : function open(path)	{
+		var dirService = Mozilla.Components.Service("@mozilla.org/file/directory_service;1", "nsIProperties");
+		var file = dirService.get("CurProcD", Components.interfaces.nsIFile);
+		file = file.parent;	// Jet root
+		
+		var paths = path.split("/");
+		for(var i = 0; i < paths.length; i++)	{
+			file.append(paths[ i ]);
+		}
+		return file;
+	},
 
-function OperationController(file){
-	var controller = this;
-	this.__worker = new Worker("../../app/modules/Jet.IO.Dispatcher.js");
-	
-	this.__worker.onmessage = function(e){console.log(e.data)}
-	
-	//this.__worker.onmessage = function(e){controller.onmessage(e)};
-	
-	// GET the handlers' operations
-	var getOperations = {
-		resource : file,
-		action : Jet.IO.OperationActions.Get,
-		object : 5		// Max handlers
-	}
-	controller.__operations[ file ] = getOperations;
-	
-	function oncomplete(operation){
-		console.log(operation);
-	}
-	this.dispatchOperation(getOperations, oncomplete)
-	
-}
-
-OperationController.prototype = {
-	__operations : {},
-	
-	/** @param {Jet.IO.Operation} operation */
-	/** @param {Function} oncomplete */
+	/** @param {String} path */
+	/** @param {Function} callback */
 	/** @returns {Void} */
-	dispatchOperation : function(operation, oncomplete){
-		if(this.canDispatch(operation)){
-			var request = Jet.IO.Requests.createRequest(operation, oncomplete);
-			this.__worker.postMessage(request);
+	read : function read(path, callback)	{
+		Components.utils.import("resource://gre/modules/NetUtil.jsm");
+		
+		function onDataAvailable(inputStream, result)	{
+			var data = null;
+			if(Components.isSuccessCode(result)) {
+				data = NetUtil.readInputStreamToString(inputStream, inputStream.available());
+			}
+			callback(result, data);
 		}
-		else {
-			throw("Jet.IO.OperationController :: Operation not supported: " +operation.resource);
-		}
+		
+		NetUtil.asyncFetch(path, onDataAvailable);
 	},
 	
-	/** @param {Jet.IO.OperationRequest} request */
-	/** @param {Function} oncomplete */
+	/** @param {String} data */
+	/** @param {String} path Native path to file*/
+	/** @param {Function} [callback] */
 	/** @returns {Void} */
-	requestDispatch : function(request, oncomplete){
-		if(Jet.IO.Requests.hasRequest(request)){
-			Jet.IO.Requests.endRequest(request);
-		}
-		else {
-			var newRequest = Jet.IO.Requests.appendRequest(request, oncomplete);
-			// Forward the request to another controller
-		}
-	},
-	
-	/** @param {Jet.IO.Operation} operation */
-	/** @returns {Boolean} */
-	canDispatch : function(operation){
-		return (this.__operations[ operation.resource ] != undefined);
-	},
-	
-	/** @param {MessageEvent} e */
-	/** @returns {Void} */
-	onmessage : function(e){
-		function oncomplete(request){
-			postMessage(request);
-		}
-		this.requestDispatch(e.data, oncomplete);
+	write : function write(data, path, callback)	{
+		Components.utils.import("resource://gre/modules/NetUtil.jsm");  
+		Components.utils.import("resource://gre/modules/FileUtils.jsm");  
+		
+		var converter = Mozilla.Components.Instance("@mozilla.org/intl/scriptableunicodeconverter", "nsIScriptableUnicodeConverter");  
+		converter.charset = "UTF-8";  
+		var inputStream = converter.convertToInputStream(data);  
+		
+		var file = new FileUtils.File(path);
+		
+		var outputStream = FileUtils.openSafeFileOutputStream(file);
+		NetUtil.asyncCopy(inputStream, outputStream, callback);
 	}
 }

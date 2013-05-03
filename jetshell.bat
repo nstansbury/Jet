@@ -1,1 +1,0 @@
-bin\xpcshell.exe -j -m -s -w -x
