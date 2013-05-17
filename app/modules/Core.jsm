@@ -13,18 +13,30 @@ var Jet = {
 	/** @param {Object} params */
 	/** @returns {Void} */
 	start : function(params)	{
-		Trace("________ Jet Server v"+this.version +" ________");
+		Trace("\n\n________ Jet Server v"+this.version +" ________");
 		
 		try{
-			ImportNS("Jet.Net");
-			ImportNS("Jet.IO");
+			ImportNS("Jet.Messaging");
+			ImportNS("Jet.Net.Http");
+			//ImportNS("Jet.IO");
 			
-			var httpService = new Jet.Net.HttpService();
+			var HttpServer = new Jet.Net.Http.HttpServer();
 			
-			var file = Jet.IO.File.open("app/resources");
-			httpService.registerDirectory("/jet/", file);
+			//var file = Jet.IO.File.open("app/resources");
+			//HttpServer.registerDirectory("/jet/", file);
 			
-			httpService.start(params.port);
+			var resource = "/about";
+			var path = "Jet.About.js"
+			var count = 5;
+			
+			var handler = Jet.Messaging.register(resource, path, count);
+			
+			HttpServer.registerPathHandler(resource, function(metadata, httpResponse){
+				handler.beginRequest(metadata, httpResponse);
+			});
+			
+			
+			HttpServer.start(params.port);
 			Trace("# Listening on: " +params.port);
 		
 			var nsThreadManager = Mozilla.Components.Service("@mozilla.org/thread-manager;1", "nsIThreadManager");
@@ -67,7 +79,7 @@ function ImportNS(namespace, scope, relative)		{
 			var len = path.length;
 			for(var i = 0; i < len; i++)	{
 				var name = path[ i ];
-				if(scope.hasOwnProperty(name) == false)	{		//** Because testing for undefined in strict mode generates a "referenced to undefined property" warning
+				if(scope.hasOwnProperty(name) == false)	{					//** Because testing for undefined in strict mode generates a "referenced to undefined property" warning
 					scope[ name ] = {};
 				}
 				scope = scope[ name ];

@@ -1,6 +1,6 @@
 "use strict";
 
-let EXPORTED_SYMBOLS = ["File"];
+let EXPORTED_SYMBOLS = ["File", "Pipe"];
 
 Components.utils.import("resource://Jet/Core.jsm");
 
@@ -54,4 +54,12 @@ var File = {
 		var outputStream = FileUtils.openSafeFileOutputStream(file);
 		NetUtil.asyncCopy(inputStream, outputStream, callback);
 	}
+}
+
+/** @constructor */
+function Pipe(){
+	
+}
+Pipe.prototype = {
+	
 }
