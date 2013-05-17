@@ -48,3 +48,7 @@ pref("extensions.logging.enabled", true);
 pref("extensions.update.url", "chrome://mozapps/locale/extensions/extensions.properties");
 pref("extensions.getMoreExtensionsURL", "chrome://mozapps/locale/extensions/extensions.properties");
 pref("extensions.getMoreThemesURL", "chrome://mozapps/locale/extensions/extensions.properties");
+
+pref("extensions.blocklist.enabled", false);
+pref("extensions.getAddons.cache.enabled", false);
+

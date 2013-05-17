@@ -4,3 +4,4 @@ category command-line-handler m-jetloader @jetjs.io/loader;1
 
 resource Jet file:modules/
 resource Lib file:libraries/
+resource Res file:resources/
