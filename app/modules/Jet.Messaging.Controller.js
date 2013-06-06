@@ -13,7 +13,7 @@ Jet.Messaging.Controller = {
 	/** @returns {Void} */
 	start : function(){		
 		onmessage = function(e){
-			Jet.Messaging.MessageController.requestDispatch(e.data);
+			Jet.Messaging.Controller.requestDispatch(e.data);
 		}
 	},
 	
@@ -111,7 +111,7 @@ Jet.Messaging.Dispatcher.prototype = {
 			return;
 		}
 		// NB. A new request bubbling up must have affinity for the handler requesting it - unless action is Jet.Messaging.RequestMethods.Signal
-		Jet.Messaging.Dispatcher.requestDispatch(message, this)
+		Jet.Messaging.Controller.requestDispatch(message, this)
 	},
 	
 	/** @param {MessageEvent} e */

@@ -1,12 +1,15 @@
 "use strict";
 
-let EXPORTED_SYMBOLS = ["register", "unregister", "ResourceHandler", "DispatchTypes", "RequestMethods", "Message", "Headers", "Queue"];
+let EXPORTED_SYMBOLS = ["register", "unregister", "Controller", "DispatchTypes", "RequestMethods", "Message", "Headers", "Queue"];
+
 
 if(Components != undefined){	// Which it will be if we're being imported into a web worker
 	Components.utils.import("resource://Jet/Core.jsm");
 	ImportNS("Jet.DOM", this, true);
+	ImportNS("Jet.Messaging.Controller");
 }
-else {	
+else {
+	importScripts("Jet")
 	if(Jet == undefined){
 		var Jet = {
 			Messaging : {}
@@ -16,98 +19,69 @@ else {
 		var symbol = EXPORTED_SYMBOLS[i];
 		Jet.Messaging[symbol] = this[symbol];
 	}
-}
-
-
-/*	Apache <=> HTTP Service <=> ResourceHandler
 	
-	Master
-		ResourceHandler
-			Worker
-				MessageController
-				MessageDispatcher
-					Slave
-						MessageListener
-						MessageHandler + Request
-							register
-							unregister
-							execute
-*/
-
-const MESSAGE_TIMEOUT = 5000;
-
-const CONTROLLER_SCRIPT_PATH = "../../app/modules/Jet.Messaging.Controller.js";
-const HANDLER_SCRIPT_PATH = "../../app/modules/Jet.Messaging.Handler.js";
-
-var handlers = {};
-
-/** @param {String} resource */
-/** @param {String} alias */
-/** @param {Integer} count */
-/** @returns {Jet.Messaging.ResourceHandler} */
-function register(resource, alias, count){
-	handlers[resource] = new Jet.Messaging.ResourceHandler(resource, alias, count);
-	return handlers[resource];
-}
-
-/** @param {Jet.Messaging.ResourceHandler} handler */
-/** @returns {Void} */
-function unregister(handler){
-	
-}
-
-/** @param {String} resource */
-/** @param {String} path */
-/** @param {Integer} count */
-/** @constructor */
-function ResourceHandler(resource, path, count){
-	
-}
-ResourceHandler.prototype = {
-	resource : "",
-	
-	path : "",
-	
-	numThreads : 1,
-	
-	beginRequest : function beginRequest(metadata, httpResponse)	{
-		var handler = this;
-		function timeout(){
-			handler.onTimeout(metadata, httpResponse);
-		}
-		try{
-			Trace("# Jet.Messaging :: beginRequest");
-			setTimeout(timeout, MESSAGE_TIMEOUT);
-			httpResponse.processAsync();
-			
-			// Do the thing
-		}
-		catch(e)	{
-			Trace(e);
-		}
-	},
-	
-	endRequest : function endRequest(metadata, httpResponse, data)	{
-		Trace("# Jet.Messaging :: endRequest");
-		//WriteFile(results, "D:\\Dev\\out.xml");
-		//httpResponse.setHeader("Content-Type", "text/xml");
-		httpResponse.write(data);
-		httpResponse.finish();
-	},
-	
-	onTimeout : function onTimeout(metadata, httpResponse){
-		Trace("# Jet.Messaging :: Resource Timeout");
-		httpResponse.setStatusLine(metadata.httpVersion, "504", "Gateway Timeout");
-		this.endRequest(metadata, httpResponse, "");
-	},
-	
-	onError : function onerror(status){
-		Trace("# Jet.Messaging :: Handler Error");
-		
+	onmessage = function(e){
+		Jet.Messaging.Controller.requestDispatch(e.data);
 	}
 }
 
 
+
+
+
+var Controller = {
+	/** @type {Jet.Messaging.Queue} */
+	messages : new Queue(),
+	
+	/** @type {Jet.Messaging.Queue} */
+	dispatchers : new Queue(),
+
+	/** @param {String} resource */
+	/** @param {String} handler */
+	/** @param {Integer} threads */
+	/** @returns {Void} */
+	register : function(resource, handler, numThreads){
+		for(var i = 0; i < numThreads; i++){
+			var dispatcher = this.createDispatcher(handler);
+		}
+		
+	},
+
+	/** @param {String} resource */
+	/** @returns {Void} */
+	unregister : function(resource){
+	
+	},
+	
+	/** @param {String} file */
+	/** @returns {Jet.Messaging.Dispatcher} */
+	createDispatcher : function(file){
+		var controller = this;
+		var dispatcher = new Jet.Messaging.Dispatcher(file);
+		dispatcher.onready = function(){
+			// When a Dispatcher becomes ready give it some work or re-queue it
+			if(Jet.Messaging.Controller.messages.peek()){
+				dispatcher.dispatchRequest(controller.messages.dequeue());
+			}
+			else {
+				controller.dispatchers.queue(dispatcher);	
+			}
+		}
+		return dispatcher;
+	},
+	
+	getDispatcher : function(){
+		
+	},
+	
+	/** @param {Jet.Messaging.Message} message */
+	/** @returns {Void} */
+	requestDispatch : function(message){
+		// Can we dispatch this resource?
+		// Get a dispatcher
+		// Or queue it on it's message queue
+	}
+}
 
 
 
@@ -207,3 +181,4 @@ Queue.prototype = {
 		this.head = this.tail = null;
 	}
 }
+

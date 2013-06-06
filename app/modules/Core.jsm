@@ -26,13 +26,23 @@ var Jet = {
 			//HttpServer.registerDirectory("/jet/", file);
 			
 			var resource = "/about";
-			var path = "Jet.About.js"
-			var count = 5;
+			var handler = "Jet.About.js"
+			var threads = 5;
 			
-			var handler = Jet.Messaging.register(resource, path, count);
+			Jet.Messaging.register(resource, handler, threads);
+			
+			var controller = Jet.Messaging.getControllerForResource(message.resource);
+			Controller.requestDispatch(message);
+			
+			
+			Jet.Messaging.requestDispatch()
+			
 			
 			HttpServer.registerPathHandler(resource, function(metadata, httpResponse){
 				handler.beginRequest(metadata, httpResponse);
+				
+				Jet.Messaging.Controller.requestDispatch(message, oncomplete)
+				
 			});
 			
 			
