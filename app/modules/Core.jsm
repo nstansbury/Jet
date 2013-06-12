@@ -28,20 +28,22 @@ var Jet = {
 			var resource = "/about";
 			var handler = "Jet.About.js"
 			var threads = 5;
+	
+			var controller = new Jet.Messaging.Controller(resource, handler, threads);
+			Jet.Messaging.registerController(controller);
 			
+			controller = Jet.Messaging.getController(message.resource);
+			controller.requestDispatch(message, oncomplete);
+			
+			// 
 			Jet.Messaging.register(resource, handler, threads);
-			
-			var controller = Jet.Messaging.getControllerForResource(message.resource);
-			Controller.requestDispatch(message);
-			
-			
-			Jet.Messaging.requestDispatch()
+			Jet.Messaging.dispatch(message, oncomplete);
 			
 			
 			HttpServer.registerPathHandler(resource, function(metadata, httpResponse){
 				handler.beginRequest(metadata, httpResponse);
 				
-				Jet.Messaging.Controller.requestDispatch(message, oncomplete)
+				Jet.Messaging.dispatch(message, oncomplete);
 				
 			});
 			

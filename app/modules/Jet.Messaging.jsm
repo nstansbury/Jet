@@ -9,7 +9,6 @@ if(Components != undefined){	// Which it will be if we're being imported into a 
 	ImportNS("Jet.Messaging.Controller");
 }
 else {
-	importScripts("Jet")
 	if(Jet == undefined){
 		var Jet = {
 			Messaging : {}
